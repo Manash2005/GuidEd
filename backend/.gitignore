@@ -1,2 +1,53 @@
-.env
 node_modules/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Type checking and linting
+.mypy_cache/
+.ruff_cache/
+.pyright/
+
+# ChromaDB persistent storage
+chroma_db/
+chroma_data/
+
+# Downloaded model caches
+.cache/
+models/
+
+# Logs
+*.log
+logs/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+
+# IDE/editor files
+.vscode/
+.idea/
+
+# Build and packaging
+build/
+dist/
+*.egg-info/

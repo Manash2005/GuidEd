@@ -1,0 +1,13 @@
+
+# LangChain
+langchain
+langchain-core
+langchain-community
+langchain-openai
+
+# ChromaDB vector database
+chromadb
+langchain-chroma
+
+python-dotenv
+dotenv
