@@ -1,0 +1,27 @@
+{
+  "sourceRows": 52,
+  "uniqueMentors": 50,
+  "duplicateMentorIds": {
+    "M013": 2,
+    "M023": 2
+  },
+  "recordsWithQualityIssues": 38,
+  "malformedEmailRecords": [
+    {
+      "mentorId": "M006",
+      "email": "mentor006(at)example.com"
+    },
+    {
+      "mentorId": "M026",
+      "email": "mentor026(at)example.com"
+    }
+  ],
+  "missingCity": 1,
+  "missingSeniority": 28,
+  "missingRolesOfExpertise": 16,
+  "notes": [
+    "Missing values are null or empty arrays; no missing mentor facts were inferred.",
+    "Contact fields remain strings to preserve leading zeros and plus signs.",
+    "M013 and M023 duplicate rows were merged after normalization."
+  ]
+}

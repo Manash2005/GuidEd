@@ -1,0 +1,2038 @@
+[
+  {
+    "mentorId": "M001",
+    "name": "Mentor 001",
+    "contact": "00000 00001",
+    "email": "mentor001@example.com",
+    "linkedin": "http://linkedin.com/in/anon-mentor-001",
+    "city": "Bengaluru",
+    "domain": "Business Generalist",
+    "company": "Company 01",
+    "masterSector": "EdTech",
+    "sectorsOfExpertise": [
+      "EdTech/Education",
+      "Delivery/Logistics"
+    ],
+    "rolesOfExpertise": [
+      "Sales/CSM/Partnerships",
+      "Business Generalist (founder's Office/strategy And Ops/chief Of Staff/eir",
+      "Etc.)"
+    ],
+    "seniority": "Senior",
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": true,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 1,
+    "dataQualityIssues": []
+  },
+  {
+    "mentorId": "M002",
+    "name": "Mentor 002",
+    "contact": "00000 00002",
+    "email": "mentor002@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-002",
+    "city": "Bengaluru",
+    "domain": "Product Management",
+    "company": "Company 02",
+    "masterSector": "SaaS",
+    "sectorsOfExpertise": [
+      "Quick Commerce",
+      "Healthtech",
+      "SaaS"
+    ],
+    "rolesOfExpertise": [
+      "Product Management"
+    ],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": true,
+      "hubspot": null,
+      "googleAnalytics": true,
+      "jira": true,
+      "excel": true,
+      "mixpanel": true
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M003",
+    "name": "Mentor 003",
+    "contact": "00000 00003",
+    "email": "mentor003@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-003",
+    "city": "Bengaluru",
+    "domain": "B2B Sales and Partnerships/CSM",
+    "company": "Company 03",
+    "masterSector": "SaaS",
+    "sectorsOfExpertise": [
+      "Quick Commerce",
+      "E-commerce",
+      "SaaS",
+      "D2C"
+    ],
+    "rolesOfExpertise": [
+      "Marketing",
+      "Sales/CSM/Partnerships",
+      "Business Generalist (founder's Office/strategy And Ops/chief Of Staff/eir",
+      "Etc.)"
+    ],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": true,
+      "hubspot": true,
+      "googleAnalytics": true,
+      "jira": null,
+      "excel": true,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 1,
+    "dataQualityIssues": [
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M004",
+    "name": "Mentor 004",
+    "contact": "00000 00004",
+    "email": "mentor004@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-004",
+    "city": "New Delhi",
+    "domain": "Business Generalist",
+    "company": "Company 04",
+    "masterSector": "SaaS",
+    "sectorsOfExpertise": [
+      "SaaS / Deeptech/AI"
+    ],
+    "rolesOfExpertise": [
+      "Marketing",
+      "Sales/CSM/Partnerships",
+      "AI and Analytics",
+      "Growth",
+      "Business Generalist (founder's Office/strategy And Ops/chief Of Staff/eir",
+      "Etc.)"
+    ],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": [
+        "n8n",
+        "Zapier"
+      ]
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": true,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": true,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M005",
+    "name": "Mentor 005",
+    "contact": "00000 00005",
+    "email": "mentor005@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-005",
+    "city": "Bengaluru",
+    "domain": "Business Generalist",
+    "company": "Company 05",
+    "masterSector": "Accounting",
+    "sectorsOfExpertise": [
+      "Quick Commerce",
+      "E-commerce",
+      "Fintech",
+      "Healthtech",
+      "SaaS",
+      "D2C",
+      "Climatetech/Greentech",
+      "Agritech"
+    ],
+    "rolesOfExpertise": [
+      "Product Management",
+      "Venture Capital",
+      "Growth",
+      "Business Generalist (founder's Office/strategy And Ops/chief Of Staff/eir",
+      "Etc.)"
+    ],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": true,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M006",
+    "name": "Mentor 006",
+    "contact": "0000000006",
+    "email": "mentor006(at)example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-006",
+    "city": "Bengaluru",
+    "domain": "Marketing",
+    "company": "Company 06",
+    "masterSector": "EdTech",
+    "sectorsOfExpertise": [
+      "EdTech/Education",
+      "Sports Tech"
+    ],
+    "rolesOfExpertise": [],
+    "seniority": "Mid-career",
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": null,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": "Good",
+    "activitiesParticipated": 3,
+    "dataQualityIssues": [
+      "email_format_unverified",
+      "roles_of_expertise_missing"
+    ]
+  },
+  {
+    "mentorId": "M007",
+    "name": "Mentor 007",
+    "contact": "00000 00007",
+    "email": "mentor007@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-007",
+    "city": "New Delhi",
+    "domain": "Business Generalist",
+    "company": "Company 07",
+    "masterSector": null,
+    "sectorsOfExpertise": [
+      "Fintech Healthtech EdTech/education Other"
+    ],
+    "rolesOfExpertise": [
+      "Venture Capital",
+      "Business Generalist (founder's Office/strategy And Ops/chief Of Staff/eir",
+      "Etc.)"
+    ],
+    "seniority": "Mid-career",
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": false,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": true,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 2,
+    "dataQualityIssues": []
+  },
+  {
+    "mentorId": "M008",
+    "name": "Mentor 008",
+    "contact": "00000 00008",
+    "email": "mentor008@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-008",
+    "city": "Bengaluru",
+    "domain": "B2B Sales and Partnerships/CSM",
+    "company": "Company 08",
+    "masterSector": "Quick Commerce",
+    "sectorsOfExpertise": [
+      "Quick Commerce",
+      "E-commerce",
+      "Fintech",
+      "Healthtech",
+      "SaaS",
+      "D2C"
+    ],
+    "rolesOfExpertise": [
+      "Sales/CSM/Partnerships",
+      "Business Generalist (founder's Office/strategy And Ops/chief Of Staff/eir",
+      "Etc.)"
+    ],
+    "seniority": "Senior",
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": true,
+      "hubspot": true,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 1,
+    "dataQualityIssues": []
+  },
+  {
+    "mentorId": "M009",
+    "name": "Mentor 009",
+    "contact": "00000 00009",
+    "email": "mentor009@example.com",
+    "linkedin": "http://linkedin.com/in/anon-mentor-009",
+    "city": "Bengaluru",
+    "domain": "Business Generalist",
+    "company": "Company 09",
+    "masterSector": "Fintech",
+    "sectorsOfExpertise": [
+      "Fintech",
+      "Logistics",
+      "EdTech/Education"
+    ],
+    "rolesOfExpertise": [
+      "Growth",
+      "Founder's Office"
+    ],
+    "seniority": "Mid-career",
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": false,
+      "subdomains": [],
+      "tools": [
+        "n8n",
+        "Zapier"
+      ]
+    },
+    "toolExperience": {
+      "tableau": true,
+      "hubspot": true,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": true,
+      "mixpanel": null
+    },
+    "mentorshipQuality": "Excellent",
+    "activitiesParticipated": 8,
+    "dataQualityIssues": []
+  },
+  {
+    "mentorId": "M010",
+    "name": "Mentor 010",
+    "contact": "00000 00010",
+    "email": "mentor010@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-010",
+    "city": "Bengaluru",
+    "domain": "Marketing",
+    "company": "Company 10",
+    "masterSector": "EdTech",
+    "sectorsOfExpertise": [
+      "HRTech",
+      "EdTech/Education",
+      "Consulting"
+    ],
+    "rolesOfExpertise": [],
+    "seniority": "Senior",
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": null,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": "Good",
+    "activitiesParticipated": 7,
+    "dataQualityIssues": [
+      "roles_of_expertise_missing"
+    ]
+  },
+  {
+    "mentorId": "M011",
+    "name": "Mentor 011",
+    "contact": "00000 00011",
+    "email": "mentor011@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-011",
+    "city": "Gurugram",
+    "domain": "Marketing",
+    "company": "Company 11",
+    "masterSector": "Tech, Info and Internet",
+    "sectorsOfExpertise": [
+      "IT",
+      "E-comm",
+      "Quick Commerce",
+      "EdTech/Education"
+    ],
+    "rolesOfExpertise": [],
+    "seniority": "Mid-career",
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": null,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": "Excellent",
+    "activitiesParticipated": null,
+    "dataQualityIssues": [
+      "roles_of_expertise_missing"
+    ]
+  },
+  {
+    "mentorId": "M012",
+    "name": "Mentor 012",
+    "contact": "00000 00012",
+    "email": "mentor012@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-012",
+    "city": "Bengaluru",
+    "domain": "Product Management",
+    "company": "Company 12",
+    "masterSector": "Retail",
+    "sectorsOfExpertise": [
+      "Retail",
+      "Quick Commerce",
+      "E-comm",
+      "IT",
+      "Consulting"
+    ],
+    "rolesOfExpertise": [],
+    "seniority": "Mid-career",
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": null,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": "Good",
+    "activitiesParticipated": 2,
+    "dataQualityIssues": [
+      "roles_of_expertise_missing"
+    ]
+  },
+  {
+    "mentorId": "M013",
+    "name": "Mentor 013",
+    "contact": "+91-0000000013",
+    "email": "mentor013@example.com",
+    "linkedin": "https://linkedin.com/in/anon-mentor-013",
+    "city": "Mumbai",
+    "domain": "Product Management",
+    "company": "Company 13",
+    "masterSector": "SaaS",
+    "sectorsOfExpertise": [
+      "E-commerce",
+      "SaaS",
+      "EdTech/Education",
+      "Deeptech/AI"
+    ],
+    "rolesOfExpertise": [],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": [
+        "n8n",
+        "Make",
+        "Zapier"
+      ]
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": true,
+      "googleAnalytics": true,
+      "jira": true,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "roles_of_expertise_missing",
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M014",
+    "name": "Mentor 014",
+    "contact": "00000 00014",
+    "email": "mentor014@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-014",
+    "city": "Bengaluru",
+    "domain": "Product Management",
+    "company": "Company 14",
+    "masterSector": "Gaming",
+    "sectorsOfExpertise": [
+      "Media",
+      "EdTech/Education",
+      "Gaming"
+    ],
+    "rolesOfExpertise": [
+      "Product Management"
+    ],
+    "seniority": "Mid-career",
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": [
+        "n8n"
+      ]
+    },
+    "toolExperience": {
+      "tableau": true,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": "Excellent",
+    "activitiesParticipated": 3,
+    "dataQualityIssues": []
+  },
+  {
+    "mentorId": "M015",
+    "name": "Mentor 015",
+    "contact": "+91 00000 00015",
+    "email": "mentor015@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-015",
+    "city": "Bengaluru",
+    "domain": "Product Management",
+    "company": "Company 15",
+    "masterSector": null,
+    "sectorsOfExpertise": [
+      "SaaS"
+    ],
+    "rolesOfExpertise": [
+      "Marketing"
+    ],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": [
+        "Other"
+      ]
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": true,
+      "googleAnalytics": true,
+      "jira": null,
+      "excel": null,
+      "mixpanel": true
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": null,
+    "dataQualityIssues": [
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M016",
+    "name": "Mentor 016",
+    "contact": "0000000016",
+    "email": "mentor016@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-016",
+    "city": "Gurugram",
+    "domain": "B2B Sales and Partnerships/CSM",
+    "company": "Company 16",
+    "masterSector": "Quick Commerce",
+    "sectorsOfExpertise": [
+      "Quick Commerce",
+      "E-commerce",
+      "SaaS",
+      "D2C",
+      "Delivery/Logistics"
+    ],
+    "rolesOfExpertise": [
+      "Product Management",
+      "Sales/CSM/Partnerships",
+      "Growth",
+      "Business Generalist (founder's Office/strategy And Ops/chief Of Staff/eir",
+      "Etc.)"
+    ],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": [
+        "n8n",
+        "Zapier"
+      ]
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": true,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M017",
+    "name": "Mentor 017",
+    "contact": "00000 00017",
+    "email": "mentor017@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-017",
+    "city": "Bengaluru",
+    "domain": "B2B Sales and Partnerships/CSM",
+    "company": "Company 17",
+    "masterSector": "AI",
+    "sectorsOfExpertise": [
+      "Taxation",
+      "Insurance",
+      "Employee Benefits",
+      "Manufacturing",
+      "AI"
+    ],
+    "rolesOfExpertise": [
+      "Sales",
+      "Cs",
+      "Partnership"
+    ],
+    "seniority": "Senior",
+    "aiProfile": {
+      "isAINative": true,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": [
+        "Yes"
+      ]
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": true,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": "Good",
+    "activitiesParticipated": 7,
+    "dataQualityIssues": []
+  },
+  {
+    "mentorId": "M018",
+    "name": "Mentor 018",
+    "contact": "0000000018",
+    "email": "mentor018@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-018",
+    "city": "Bengaluru",
+    "domain": "B2B Sales and Partnerships/CSM",
+    "company": "Company 18",
+    "masterSector": "SaaS",
+    "sectorsOfExpertise": [
+      "SaaS"
+    ],
+    "rolesOfExpertise": [
+      "Sales/CSM/Partnerships"
+    ],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": false,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": true,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": true,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 1,
+    "dataQualityIssues": [
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M019",
+    "name": "Mentor 019",
+    "contact": "00000 00019",
+    "email": "mentor019@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-019",
+    "city": "Bengaluru",
+    "domain": "B2B Sales and Partnerships/CSM",
+    "company": "Company 19",
+    "masterSector": "Hr Tech",
+    "sectorsOfExpertise": [],
+    "rolesOfExpertise": [
+      "Product Management",
+      "Sales/CSM/Partnerships",
+      "AI and Analytics",
+      "Business Generalist (founder's Office/strategy And Ops/chief Of Staff/eir",
+      "Etc.)"
+    ],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": true,
+      "mixpanel": true
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M020",
+    "name": "Mentor 020",
+    "contact": "00000 00020",
+    "email": "mentor020@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-020",
+    "city": "Mumbai",
+    "domain": "Behavioural",
+    "company": "Company 20",
+    "masterSector": "Manufacturing",
+    "sectorsOfExpertise": [],
+    "rolesOfExpertise": [],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": null,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "roles_of_expertise_missing",
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M021",
+    "name": "Mentor 021",
+    "contact": "00000 00021",
+    "email": "mentor021@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-021",
+    "city": "Bengaluru",
+    "domain": "Product Management",
+    "company": "Company 21",
+    "masterSector": "E-commerce",
+    "sectorsOfExpertise": [
+      "Quick Commerce",
+      "E-commerce",
+      "Fintech",
+      "SaaS",
+      "EdTech/Education",
+      "Deeptech/AI"
+    ],
+    "rolesOfExpertise": [
+      "Product Management / AI And Analytics"
+    ],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": [
+        "n8n",
+        "Make",
+        "Other"
+      ]
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": true,
+      "jira": true,
+      "excel": null,
+      "mixpanel": true
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 1,
+    "dataQualityIssues": [
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M022",
+    "name": "Mentor 022",
+    "contact": "00000 00022",
+    "email": "mentor022@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-022",
+    "city": "Bengaluru",
+    "domain": "Marketing",
+    "company": "Company 22",
+    "masterSector": "Freelance",
+    "sectorsOfExpertise": [
+      "Travel Tech",
+      "Fintech",
+      "IT",
+      "Food and Beverages",
+      "Healthtech"
+    ],
+    "rolesOfExpertise": [],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": null,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "roles_of_expertise_missing",
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M023",
+    "name": "Mentor 023",
+    "contact": "0000000023",
+    "email": "mentor023@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-023",
+    "city": "Bengaluru",
+    "domain": "Growth",
+    "company": "Company 23",
+    "masterSector": "Fintech",
+    "sectorsOfExpertise": [
+      "Quick Commerce",
+      "E-commerce",
+      "Fintech",
+      "D2C"
+    ],
+    "rolesOfExpertise": [],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": [
+        "n8n",
+        "Zapier"
+      ]
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": true,
+      "googleAnalytics": true,
+      "jira": true,
+      "excel": true,
+      "mixpanel": true
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "roles_of_expertise_missing",
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M024",
+    "name": "Mentor 024",
+    "contact": "+91-0000000024",
+    "email": "mentor024@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-024",
+    "city": "Bengaluru",
+    "domain": "Behavioural",
+    "company": "Company 24",
+    "masterSector": "IT",
+    "sectorsOfExpertise": [
+      "SaaS"
+    ],
+    "rolesOfExpertise": [
+      "Sales/CSM/Partnerships",
+      "Business Generalist (founder's Office/strategy And Ops/chief Of Staff/eir",
+      "Etc.)"
+    ],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": [
+        "n8n",
+        "Other"
+      ]
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": true,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M025",
+    "name": "Mentor 025",
+    "contact": "00000 00025",
+    "email": "mentor025@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-025",
+    "city": "Bengaluru",
+    "domain": "Business Generalist",
+    "company": "Company 25",
+    "masterSector": "E-commerce",
+    "sectorsOfExpertise": [
+      "E-commerce",
+      "Climatetech/Greentech",
+      "Deeptech/AI",
+      "Delivery/Logistics"
+    ],
+    "rolesOfExpertise": [
+      "Product Management",
+      "Business Generalist (founder's Office/strategy And Ops/chief Of Staff/eir",
+      "Etc.)"
+    ],
+    "seniority": "Mid-level",
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": [
+        "Zapier"
+      ]
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": true,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": "Good",
+    "activitiesParticipated": 1,
+    "dataQualityIssues": []
+  },
+  {
+    "mentorId": "M026",
+    "name": "Mentor 026",
+    "contact": "+91 00000 00026",
+    "email": "mentor026(at)example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-026",
+    "city": "Bengaluru",
+    "domain": "Business Generalist",
+    "company": "Company 26",
+    "masterSector": null,
+    "sectorsOfExpertise": [
+      "Healthtech / SaaS / EdTech/education"
+    ],
+    "rolesOfExpertise": [
+      "Growth Category Management Business Generalist (founder's Office/strategy And Ops/chief Of Staff/eir",
+      "Etc.)"
+    ],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": false,
+      "subdomains": [],
+      "tools": [
+        "Other"
+      ]
+    },
+    "toolExperience": {
+      "tableau": true,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": true,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "email_format_unverified",
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M027",
+    "name": "Mentor 027",
+    "contact": "00000 00027",
+    "email": "mentor027@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-027",
+    "city": "Bengaluru",
+    "domain": "Marketing",
+    "company": "Company 27",
+    "masterSector": "SaaS",
+    "sectorsOfExpertise": [
+      "B2B",
+      "SaaS",
+      "E- Commerce"
+    ],
+    "rolesOfExpertise": [
+      "Product Marketing Manager",
+      "CMO/Marketing Manager",
+      "Content Marketing",
+      "Performance Marketing"
+    ],
+    "seniority": "Mid-level",
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": [
+        "Hubspot",
+        "Factors.ai",
+        "Google Ads",
+        "LinkedIn Ads"
+      ]
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 1,
+    "dataQualityIssues": []
+  },
+  {
+    "mentorId": "M028",
+    "name": "Mentor 028",
+    "contact": "00000 00028",
+    "email": "mentor028@example.com",
+    "linkedin": "https://linkedin.com/in/anon-mentor-028",
+    "city": "Pune",
+    "domain": "B2B Sales and Partnerships/CSM",
+    "company": "Company 28",
+    "masterSector": "D2C",
+    "sectorsOfExpertise": [
+      "Fintech",
+      "D2C",
+      "EdTech/Education"
+    ],
+    "rolesOfExpertise": [
+      "Marketing",
+      "Sales/CSM/Partnerships",
+      "Growth",
+      "Business Generalist (founder's Office/strategy And Ops/chief Of Staff/eir",
+      "Etc.)"
+    ],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": true,
+      "hubspot": true,
+      "googleAnalytics": true,
+      "jira": null,
+      "excel": true,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M029",
+    "name": "Mentor 029",
+    "contact": "+91 00000 00029",
+    "email": "mentor029@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-029",
+    "city": "Bengaluru",
+    "domain": "Data",
+    "company": null,
+    "masterSector": "Mobility",
+    "sectorsOfExpertise": [],
+    "rolesOfExpertise": [],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": null,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "roles_of_expertise_missing",
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M030",
+    "name": "Mentor 030",
+    "contact": "00000 00030",
+    "email": "mentor030@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-030",
+    "city": "Canada",
+    "domain": "Marketing",
+    "company": "Company 29",
+    "masterSector": "IT",
+    "sectorsOfExpertise": [
+      "E-commerce",
+      "EdTech/Education",
+      "Media"
+    ],
+    "rolesOfExpertise": [
+      "Founder's Office",
+      "Brand Management",
+      "Digital Marketing",
+      "AI"
+    ],
+    "seniority": "Mid-career",
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": [
+        "Zapier",
+        "n8n",
+        "Make"
+      ]
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": "Excellent",
+    "activitiesParticipated": 3,
+    "dataQualityIssues": []
+  },
+  {
+    "mentorId": "M031",
+    "name": "Mentor 031",
+    "contact": "0000000031",
+    "email": "mentor031@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-031",
+    "city": "Bengaluru",
+    "domain": "Business Generalist",
+    "company": "Company 30",
+    "masterSector": "Quick Commerce",
+    "sectorsOfExpertise": [
+      "Quick Commerce",
+      "E-commerce",
+      "Healthtech",
+      "D2C",
+      "EdTech/Education",
+      "Delivery/Logistics"
+    ],
+    "rolesOfExpertise": [
+      "Sales/CSM/Partnerships",
+      "Growth",
+      "Business Generalist (founder's Office/strategy And Ops/chief Of Staff/eir",
+      "Etc.)"
+    ],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": true,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M032",
+    "name": "Mentor 032",
+    "contact": "00000 00032",
+    "email": "mentor032@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-032",
+    "city": "Bengaluru",
+    "domain": "Venture Capital",
+    "company": "Company 31",
+    "masterSector": "VC",
+    "sectorsOfExpertise": [
+      "VC"
+    ],
+    "rolesOfExpertise": [],
+    "seniority": "Senior",
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": null,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": null,
+    "dataQualityIssues": [
+      "roles_of_expertise_missing"
+    ]
+  },
+  {
+    "mentorId": "M033",
+    "name": "Mentor 033",
+    "contact": "00000 00033",
+    "email": "mentor033@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-033",
+    "city": "Bengaluru",
+    "domain": "AI",
+    "company": "Company 32",
+    "masterSector": "AI",
+    "sectorsOfExpertise": [
+      "E - Commerce Healthtech SaaS EdTech/education"
+    ],
+    "rolesOfExpertise": [
+      "Product Management AI And Analytics Business Generalist (founder's Office/strategy And Ops/chief Of Staff/eir",
+      "Etc.)"
+    ],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [
+        "AI Product"
+      ],
+      "tools": [
+        "n8n",
+        "Langflow",
+        "Make"
+      ]
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": true,
+      "jira": true,
+      "excel": true,
+      "mixpanel": true
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M034",
+    "name": "Mentor 034",
+    "contact": "+91 00000 00034",
+    "email": "mentor034@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-034",
+    "city": "Bengaluru",
+    "domain": "B2B Sales and Partnerships/CSM",
+    "company": "Company 33",
+    "masterSector": "SaaS",
+    "sectorsOfExpertise": [
+      "SaaS"
+    ],
+    "rolesOfExpertise": [
+      "Sales/CSM/Partnerships"
+    ],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M035",
+    "name": "Mentor 035",
+    "contact": "00000 00035",
+    "email": "mentor035@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-035",
+    "city": "Bengaluru",
+    "domain": "Product Management",
+    "company": "Company 34",
+    "masterSector": "SaaS",
+    "sectorsOfExpertise": [
+      "E-commerce",
+      "SaaS",
+      "D2C"
+    ],
+    "rolesOfExpertise": [
+      "Product Management",
+      "AI and Analytics",
+      "Growth",
+      "Business Generalist (founder's Office/strategy And Ops/chief Of Staff/eir",
+      "Etc.)"
+    ],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": [
+        "n8n",
+        "Zapier"
+      ]
+    },
+    "toolExperience": {
+      "tableau": true,
+      "hubspot": true,
+      "googleAnalytics": true,
+      "jira": true,
+      "excel": true,
+      "mixpanel": true
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M036",
+    "name": "Mentor 036",
+    "contact": "00000 00036",
+    "email": "mentor036@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-036",
+    "city": "Bengaluru",
+    "domain": "Marketing",
+    "company": "Company 35",
+    "masterSector": "D2C",
+    "sectorsOfExpertise": [
+      "E-commerce",
+      "SaaS",
+      "D2C",
+      "Deeptech/AI"
+    ],
+    "rolesOfExpertise": [
+      "Marketing Sales/CSM/partnerships AI And Analytics"
+    ],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": [
+        "n8n Other"
+      ]
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M037",
+    "name": "Mentor 037",
+    "contact": "00000 00037",
+    "email": "mentor037@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-037",
+    "city": "Bengaluru",
+    "domain": "AI",
+    "company": "Company 36",
+    "masterSector": "AI",
+    "sectorsOfExpertise": [],
+    "rolesOfExpertise": [],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": null,
+      "subdomains": [
+        "AI Product"
+      ],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "roles_of_expertise_missing",
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M038",
+    "name": "Mentor 038",
+    "contact": "00000 00038",
+    "email": "mentor038@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-038",
+    "city": "Mumbai",
+    "domain": "Business Generalist, Growth",
+    "company": "Company 37",
+    "masterSector": "Quick Commerce",
+    "sectorsOfExpertise": [
+      "E-commerce",
+      "Quick Commerce",
+      "Fintech",
+      "Healthtech",
+      "Consulting"
+    ],
+    "rolesOfExpertise": [],
+    "seniority": "Mid-career",
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": null,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": "Excellent",
+    "activitiesParticipated": 3,
+    "dataQualityIssues": [
+      "roles_of_expertise_missing"
+    ]
+  },
+  {
+    "mentorId": "M039",
+    "name": "Mentor 039",
+    "contact": "00000 00039",
+    "email": "mentor039@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-039",
+    "city": "Bengaluru",
+    "domain": "Business Generalist",
+    "company": "Company 38",
+    "masterSector": "Fintech",
+    "sectorsOfExpertise": [],
+    "rolesOfExpertise": [],
+    "seniority": "Mid-career",
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": null,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "roles_of_expertise_missing"
+    ]
+  },
+  {
+    "mentorId": "M040",
+    "name": "Mentor 040",
+    "contact": "00000 00040",
+    "email": "mentor040@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-040",
+    "city": null,
+    "domain": "Business Generalist",
+    "company": "Company 39",
+    "masterSector": "Healthtech/Medtech",
+    "sectorsOfExpertise": [
+      "Healthtech",
+      "D2C"
+    ],
+    "rolesOfExpertise": [
+      "Product Management",
+      "Venture Capital",
+      "Sales/CSM/Partnerships",
+      "AI and Analytics",
+      "Growth",
+      "Category Management",
+      "Business Generalist (founder's Office/strategy And Ops/chief Of Staff/eir",
+      "Etc.)"
+    ],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": false,
+      "subdomains": [],
+      "tools": [
+        "Make",
+        "Other"
+      ]
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": true,
+      "googleAnalytics": true,
+      "jira": true,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "city_missing",
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M041",
+    "name": "Mentor 041",
+    "contact": "00000 00041",
+    "email": "mentor041@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-041",
+    "city": "Bengaluru",
+    "domain": "Marketing",
+    "company": "Company 40",
+    "masterSector": "AI",
+    "sectorsOfExpertise": [
+      "SaaS",
+      "Deeptech/AI"
+    ],
+    "rolesOfExpertise": [],
+    "seniority": "Mid-career",
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": true,
+      "jira": true,
+      "excel": null,
+      "mixpanel": true
+    },
+    "mentorshipQuality": "Excellent",
+    "activitiesParticipated": 2,
+    "dataQualityIssues": [
+      "roles_of_expertise_missing"
+    ]
+  },
+  {
+    "mentorId": "M042",
+    "name": "Mentor 042",
+    "contact": "+91-0000000042",
+    "email": "mentor042@example.com",
+    "linkedin": "https://linkedin.com/in/anon-mentor-042",
+    "city": "Bengaluru",
+    "domain": "Marketing",
+    "company": "Company 41",
+    "masterSector": "EdTech",
+    "sectorsOfExpertise": [
+      "EdTech/Education",
+      "HRTech",
+      "SaaS"
+    ],
+    "rolesOfExpertise": [
+      "Brand Strategy",
+      "Marketing",
+      "Marketing Generalist"
+    ],
+    "seniority": "Mid-career",
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": [
+        "n8n",
+        "Notion AI",
+        "Make",
+        "Vercel",
+        "Canva",
+        "Gamma"
+      ]
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 2,
+    "dataQualityIssues": []
+  },
+  {
+    "mentorId": "M043",
+    "name": "Mentor 043",
+    "contact": "00000 00043",
+    "email": "mentor043@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-043",
+    "city": "Noida",
+    "domain": "Business Generalist",
+    "company": "Company 42",
+    "masterSector": "Quick Commerce",
+    "sectorsOfExpertise": [
+      "Quick Commerce",
+      "D2C",
+      "EdTech/Education"
+    ],
+    "rolesOfExpertise": [
+      "Marketing",
+      "Sales/CSM/Partnerships",
+      "Growth",
+      "Category Management",
+      "Business Generalist (founder's Office/strategy And Ops/chief Of Staff/eir",
+      "Etc.)"
+    ],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": true,
+      "jira": null,
+      "excel": true,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": null,
+    "dataQualityIssues": [
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M044",
+    "name": "Mentor 044",
+    "contact": "00000 00044",
+    "email": "mentor044@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-044",
+    "city": "Bengaluru",
+    "domain": "Business Generalist",
+    "company": "Company 38",
+    "masterSector": "Healthtech/Medtech",
+    "sectorsOfExpertise": [
+      "Healthtech"
+    ],
+    "rolesOfExpertise": [
+      "Founder's Office",
+      "Business Head",
+      "Partnerships"
+    ],
+    "seniority": "Mid-level",
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": "Excellent",
+    "activitiesParticipated": 4,
+    "dataQualityIssues": []
+  },
+  {
+    "mentorId": "M045",
+    "name": "Mentor 045",
+    "contact": "00000 00045",
+    "email": "mentor045@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-045",
+    "city": "Bengaluru",
+    "domain": "Venture Capital",
+    "company": "Company 43",
+    "masterSector": "VC",
+    "sectorsOfExpertise": [
+      "VC"
+    ],
+    "rolesOfExpertise": [],
+    "seniority": "Mid-career",
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": null,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "roles_of_expertise_missing"
+    ]
+  },
+  {
+    "mentorId": "M046",
+    "name": "Mentor 046",
+    "contact": "+91 00000 00046",
+    "email": "mentor046@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-046",
+    "city": "Bengaluru",
+    "domain": "Growth",
+    "company": "Company 44",
+    "masterSector": "SaaS",
+    "sectorsOfExpertise": [
+      "E-commerce",
+      "Fintech",
+      "SaaS",
+      "D2C",
+      "EdTech/Education"
+    ],
+    "rolesOfExpertise": [
+      "Sales/CSM/Partnerships",
+      "Growth",
+      "Business Generalist (founder's Office/strategy And Ops/chief Of Staff/eir",
+      "Etc.)"
+    ],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": [
+        "Zapier"
+      ]
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": true,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": true,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M047",
+    "name": "Mentor 047",
+    "contact": "00000 00047",
+    "email": "mentor047@example.com",
+    "linkedin": "http://linkedin.com/in/anon-mentor-047",
+    "city": "Bengaluru",
+    "domain": "Category Management",
+    "company": "Company 45",
+    "masterSector": "Quick Commerce",
+    "sectorsOfExpertise": [
+      "Quick Commerce",
+      "E-commerce"
+    ],
+    "rolesOfExpertise": [
+      "Category Management"
+    ],
+    "seniority": "Mid-career",
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": false,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": true,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 2,
+    "dataQualityIssues": []
+  },
+  {
+    "mentorId": "M048",
+    "name": "Mentor 048",
+    "contact": "00000 00048",
+    "email": "mentor048@example.com",
+    "linkedin": "https://linkedin.com/in/anon-mentor-048",
+    "city": "San Francisco",
+    "domain": "Marketing",
+    "company": "Company 46",
+    "masterSector": null,
+    "sectorsOfExpertise": [
+      "SaaS",
+      "EdTech/Education"
+    ],
+    "rolesOfExpertise": [
+      "Marketing",
+      "AI and Analytics",
+      "Business Generalist (founder's Office/strategy And Ops/chief Of Staff/eir",
+      "Etc.)"
+    ],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": null,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": true,
+      "googleAnalytics": true,
+      "jira": true,
+      "excel": true,
+      "mixpanel": null
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M049",
+    "name": "Mentor 049",
+    "contact": "00000 00049",
+    "email": "mentor049@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-049",
+    "city": "Bengaluru",
+    "domain": "Business Generalist",
+    "company": "Company 47",
+    "masterSector": "D2C",
+    "sectorsOfExpertise": [
+      "Quick Commerce",
+      "E-commerce",
+      "D2C",
+      "EdTech/Education"
+    ],
+    "rolesOfExpertise": [
+      "Product Management",
+      "Marketing",
+      "Growth",
+      "Business Generalist (founder's Office/strategy And Ops/chief Of Staff/eir",
+      "Etc.)"
+    ],
+    "seniority": null,
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": true,
+      "subdomains": [],
+      "tools": [
+        "n8n",
+        "Zapier"
+      ]
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": true,
+      "jira": null,
+      "excel": true,
+      "mixpanel": true
+    },
+    "mentorshipQuality": null,
+    "activitiesParticipated": 0,
+    "dataQualityIssues": [
+      "seniority_missing"
+    ]
+  },
+  {
+    "mentorId": "M050",
+    "name": "Mentor 050",
+    "contact": "00000 00050",
+    "email": "mentor050@example.com",
+    "linkedin": "https://www.linkedin.com/in/anon-mentor-050",
+    "city": "Bengaluru",
+    "domain": "Business Generalist",
+    "company": "Company 48",
+    "masterSector": "Climatetech",
+    "sectorsOfExpertise": [
+      "Climatetech/Greentech",
+      "Manufacturing",
+      "Logistics"
+    ],
+    "rolesOfExpertise": [],
+    "seniority": "Mid-career",
+    "aiProfile": {
+      "isAINative": null,
+      "builtAIProductOrWorkflow": null,
+      "subdomains": [],
+      "tools": []
+    },
+    "toolExperience": {
+      "tableau": null,
+      "hubspot": null,
+      "googleAnalytics": null,
+      "jira": null,
+      "excel": null,
+      "mixpanel": null
+    },
+    "mentorshipQuality": "Good",
+    "activitiesParticipated": 5,
+    "dataQualityIssues": [
+      "roles_of_expertise_missing"
+    ]
+  }
+]
