@@ -12,8 +12,8 @@ AGENT_DIR = ROOT / "agent"
 DATA_FILE = ROOT / "data" / "mentors.json"
 CHROMA_DB = ROOT / "data" / "chroma_db"
 
-# Ensure environment variables are loaded
-load_dotenv(AGENT_DIR / ".env")
+# Ensure environment variables are loaded from backend/.env
+load_dotenv(ROOT / ".env")
 
 sys.path.insert(0, str(ROOT))
 try:
