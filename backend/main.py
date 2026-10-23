@@ -4,8 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from db.mongo import connect_to_mongo, close_mongo_connection
-from routes.mentors import router as mentors_router
-from routes.agent import router as agent_router
+from routes.mentors_routes import router as mentors_router
+from routes.agent_routes import router as agent_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
