@@ -1,0 +1,360 @@
+[
+  {
+    "id": "Q001",
+    "category": "semantic_recommendation",
+    "query": "I'm a software professional interested in moving into AI product management. Which mentors are relevant?",
+    "expectedMentorIds": [
+      "M013",
+      "M021",
+      "M033",
+      "M035",
+      "M037"
+    ],
+    "expectedAnswer": "Relevant options include M013, whose domain is Product Management and whose expertise sectors include Deeptech/AI, and whose AI tools include n8n, Make, and Zapier. M021 works in Product Management, lists Deeptech/AI among their sectors, and lists n8n and Make among AI tools. M033 is in AI, lists AI Product as an AI subdomain, and lists n8n, Langflow, and Make. M035 works in Product Management and lists AI and Analytics among roles of expertise. M037 is in AI and lists AI Product as an AI subdomain. The dataset does not provide detailed career histories, so these are potential matches rather than guaranteed mentors for every AI product management need."
+  },
+  {
+    "id": "Q002",
+    "category": "semantic_recommendation",
+    "query": "I want advice on building AI workflows and automations with tools such as n8n or Zapier. Who could help?",
+    "expectedMentorIds": [
+      "M004",
+      "M009",
+      "M013",
+      "M016",
+      "M021",
+      "M023",
+      "M024",
+      "M030",
+      "M033",
+      "M035",
+      "M036",
+      "M042",
+      "M046",
+      "M049"
+    ],
+    "expectedAnswer": "Potential matches whose records list n8n, Zapier, Make, or related workflow tools include M004, M009, M013, M016, M021, M023, M024, M030, M033, M035, M036, M042, M046, and M049. The dataset records these tool names, but does not establish each person's depth of expertise with every tool. M036's tools are recorded as a combined value, so verify the original record before treating each word as a separate tool."
+  },
+  {
+    "id": "Q003",
+    "category": "semantic_recommendation",
+    "query": "I work in SaaS and need mentorship on product management.",
+    "expectedMentorIds": [
+      "M002",
+      "M013",
+      "M021",
+      "M035"
+    ],
+    "expectedAnswer": "M002 is in Product Management and lists SaaS as its master sector. M013 is in Product Management and lists SaaS among its sectors of expertise. M021 is in Product Management and lists SaaS among its sectors. M035 is in Product Management and lists SaaS among its sectors. These records make them reasonable candidates for a SaaS product-management conversation."
+  },
+  {
+    "id": "Q004",
+    "category": "semantic_recommendation",
+    "query": "I am starting a business in quick commerce and want advice on growth and category management.",
+    "expectedMentorIds": [
+      "M031",
+      "M038",
+      "M043",
+      "M046",
+      "M047"
+    ],
+    "expectedAnswer": "M031 lists Quick Commerce as its master sector and has Growth among roles of expertise. M038's domain is Business Generalist, Growth and it lists Quick Commerce among its sectors. M043 lists Quick Commerce as its master sector and includes Growth and Category Management among roles of expertise. M046 includes Growth among roles and Quick Commerce-related commerce sectors in its expertise. M047's domain is Category Management and its master sector is Quick Commerce."
+  },
+  {
+    "id": "Q005",
+    "category": "semantic_recommendation",
+    "query": "I need guidance on marketing for a B2B SaaS company, especially product marketing and performance marketing.",
+    "expectedMentorIds": [
+      "M027",
+      "M042",
+      "M048"
+    ],
+    "expectedAnswer": "M027 is in Marketing, lists B2B and SaaS among sectors of expertise, and lists Product Marketing Manager, Content Marketing, and Performance Marketing among roles. M042 is in Marketing and lists SaaS among sectors, with Brand Strategy and Marketing roles. M048 is in Marketing and lists SaaS among sectors, with Marketing among roles of expertise."
+  },
+  {
+    "id": "Q006",
+    "category": "semantic_recommendation",
+    "query": "Which mentors have venture capital experience?",
+    "expectedMentorIds": [
+      "M005",
+      "M032",
+      "M040",
+      "M045"
+    ],
+    "expectedAnswer": "M032 and M045 have Venture Capital as their domain and VC as their master sector. M005 lists Venture Capital among roles of expertise, and M040 also lists Venture Capital among roles of expertise. The data supports VC-related relevance, but does not specify investment stages, cheque sizes, or portfolio companies."
+  },
+  {
+    "id": "Q007",
+    "category": "semantic_recommendation",
+    "query": "I am building a climate-tech or green-tech company. Which mentors have relevant sector experience?",
+    "expectedMentorIds": [
+      "M005",
+      "M025",
+      "M050"
+    ],
+    "expectedAnswer": "M050 lists Climatetech as its master sector and includes Climatetech/Greentech, Manufacturing, and Logistics among sectors of expertise. M005 lists Climatetech/Greentech among its sectors of expertise. M025 also lists Climatetech/Greentech among sectors of expertise."
+  },
+  {
+    "id": "Q008",
+    "category": "semantic_recommendation",
+    "query": "I need a mentor for healthtech or medtech business strategy and partnerships.",
+    "expectedMentorIds": [
+      "M040",
+      "M044",
+      "M005",
+      "M031"
+    ],
+    "expectedAnswer": "M040 and M044 list Healthtech/Medtech as their master sector. M044 lists Founder's Office, Business Head, and Partnerships among roles of expertise. M005 lists Healthtech among sectors of expertise, and M031 also lists Healthtech among sectors. M044 is a particularly direct match for business leadership and partnerships based on the available role labels."
+  },
+  {
+    "id": "Q009",
+    "category": "semantic_recommendation",
+    "query": "I want to improve sales, customer success, and partnerships in a SaaS business.",
+    "expectedMentorIds": [
+      "M003",
+      "M008",
+      "M016",
+      "M018",
+      "M034"
+    ],
+    "expectedAnswer": "M003, M008, M016, M018, and M034 have B2B Sales and Partnerships/CSM or related sales/CSM roles. M003, M016, M018, and M034 list SaaS among sectors or as the master sector; M008 has broad expertise across SaaS and several commerce sectors. These are candidates for sales, customer success, or partnership discussions."
+  },
+  {
+    "id": "Q010",
+    "category": "semantic_recommendation",
+    "query": "I want mentorship in growth strategy across e-commerce and D2C.",
+    "expectedMentorIds": [
+      "M023",
+      "M025",
+      "M031",
+      "M043",
+      "M046",
+      "M049"
+    ],
+    "expectedAnswer": "M023 lists Growth as its domain and includes E-commerce and D2C among its sectors. M025 lists E-commerce and D2C-related expertise. M031 lists Growth as a role and includes E-commerce among sectors. M043 lists Growth as a role and includes D2C. M046 lists Growth as a role and includes E-commerce and D2C. M049 lists Growth as a role and includes E-commerce and D2C."
+  },
+  {
+    "id": "Q011",
+    "category": "exact_lookup",
+    "query": "Which mentor is based in Bengaluru, works in AI, and lists AI Product as an AI subdomain?",
+    "expectedMentorIds": [
+      "M033",
+      "M037"
+    ],
+    "expectedAnswer": "M033 and M037 are listed in Bengaluru, have AI as their domain, and list AI Product as an AI subdomain. M033 also lists n8n, Langflow, and Make as AI tools; M037 has no AI tools listed."
+  },
+  {
+    "id": "Q012",
+    "category": "exact_lookup",
+    "query": "Which mentor record explicitly says the mentor is AI-native?",
+    "expectedMentorIds": [
+      "M017"
+    ],
+    "expectedAnswer": "M017 is the record with aiProfile.isAINative set to true. Do not infer that other mentors are or are not AI-native when the field is null or missing."
+  },
+  {
+    "id": "Q013",
+    "category": "exact_lookup",
+    "query": "Which mentors have built an AI product or workflow according to the dataset?",
+    "expectedMentorIds": [
+      "M001",
+      "M002",
+      "M003",
+      "M004",
+      "M005",
+      "M008",
+      "M013",
+      "M014",
+      "M015",
+      "M016",
+      "M017",
+      "M019",
+      "M021",
+      "M023",
+      "M024",
+      "M025",
+      "M027",
+      "M028",
+      "M030",
+      "M031",
+      "M033",
+      "M034",
+      "M035",
+      "M036",
+      "M041",
+      "M042",
+      "M043",
+      "M044",
+      "M046",
+      "M049"
+    ],
+    "expectedAnswer": "The records with aiProfile.builtAIProductOrWorkflow explicitly set to true are M001, M002, M003, M004, M005, M008, M013, M014, M015, M016, M017, M019, M021, M023, M024, M025, M027, M028, M030, M031, M033, M034, M035, M036, M041, M042, M043, M044, M046, and M049. Do not treat null as true or false."
+  },
+  {
+    "id": "Q014",
+    "category": "exact_lookup",
+    "query": "Which mentor lists Langflow among their AI tools?",
+    "expectedMentorIds": [
+      "M033"
+    ],
+    "expectedAnswer": "M033 lists n8n, Langflow, and Make in aiProfile.tools."
+  },
+  {
+    "id": "Q015",
+    "category": "exact_lookup",
+    "query": "Which mentor has Excel, Google Analytics, Jira, Tableau, and Mixpanel all marked true?",
+    "expectedMentorIds": [
+      "M002"
+    ],
+    "expectedAnswer": "M002 has tableau, googleAnalytics, jira, excel, and mixpanel all marked true in toolExperience. Its HubSpot value is null."
+  },
+  {
+    "id": "Q016",
+    "category": "exact_lookup",
+    "query": "Which mentor is in Category Management and has Quick Commerce as the master sector?",
+    "expectedMentorIds": [
+      "M047"
+    ],
+    "expectedAnswer": "M047 has Category Management as the domain and Quick Commerce as the master sector. Its sectors of expertise include Quick Commerce and E-commerce."
+  },
+  {
+    "id": "Q017",
+    "category": "exact_lookup",
+    "query": "Which mentors have Venture Capital as their domain and VC as their master sector?",
+    "expectedMentorIds": [
+      "M032",
+      "M045"
+    ],
+    "expectedAnswer": "M032 and M045 both have Venture Capital as their domain and VC as their master sector."
+  },
+  {
+    "id": "Q018",
+    "category": "constraint_handling",
+    "query": "I need a cybersecurity mentor based in Bengaluru. Who in the dataset matches?",
+    "expectedMentorIds": [],
+    "expectedAnswer": "No mentor explicitly lists cybersecurity as a domain, sector, or role in the provided dataset. The system should say it cannot identify a confirmed match rather than inventing one. It could ask whether the student would consider a related AI or software mentor, if appropriate."
+  },
+  {
+    "id": "Q019",
+    "category": "constraint_handling",
+    "query": "Find me a mentor with confirmed seniority of Senior and experience in venture capital.",
+    "expectedMentorIds": [
+      "M032"
+    ],
+    "expectedAnswer": "M032 has seniority listed as Senior and has Venture Capital as its domain and VC as its master sector. M045 has Venture Capital as its domain, but its seniority is Mid-career, so it does not satisfy the Senior constraint."
+  },
+  {
+    "id": "Q020",
+    "category": "constraint_handling",
+    "query": "I only want mentors whose seniority is explicitly listed as Senior. Which mentors qualify?",
+    "expectedMentorIds": [
+      "M001",
+      "M008",
+      "M010",
+      "M017",
+      "M032"
+    ],
+    "expectedAnswer": "Mentors with seniority explicitly listed as Senior include M001, M008, M010, M017, and M032. Do not include mentors whose seniority is null, missing, or listed as Mid-career/Mid-level."
+  },
+  {
+    "id": "Q021",
+    "category": "semantic_recommendation",
+    "query": "I am a founder in e-commerce looking for someone who understands both product management and growth.",
+    "expectedMentorIds": [
+      "M021",
+      "M025",
+      "M035",
+      "M049"
+    ],
+    "expectedAnswer": "M021 has Product Management as its domain and lists E-commerce among sectors. M025 lists Product Management as a role and E-commerce among sectors. M035 has Product Management as its domain, lists E-commerce among sectors, and includes Growth among roles. M049 lists Product Management and Growth among roles and includes E-commerce among sectors."
+  },
+  {
+    "id": "Q022",
+    "category": "semantic_recommendation",
+    "query": "I need a mentor with marketing and EdTech experience.",
+    "expectedMentorIds": [
+      "M006",
+      "M010",
+      "M011",
+      "M027",
+      "M042",
+      "M048"
+    ],
+    "expectedAnswer": "M006 and M010 have Marketing as their domain and list EdTech/Education among sectors. M011 has Marketing as its domain and lists EdTech/Education among sectors. M027 has Marketing as its domain and lists EdTech/Education among sectors. M042 has Marketing as its domain and lists EdTech/Education as well as HRTech and SaaS. M048 has Marketing as its domain and lists EdTech/Education among sectors."
+  },
+  {
+    "id": "Q023",
+    "category": "exact_lookup",
+    "query": "Which mentor is listed in San Francisco and has Marketing as their domain?",
+    "expectedMentorIds": [
+      "M048"
+    ],
+    "expectedAnswer": "M048 is listed in San Francisco and has Marketing as its domain. Its seniority is not provided."
+  },
+  {
+    "id": "Q024",
+    "category": "data_quality",
+    "query": "Can you tell me M002's seniority?",
+    "expectedMentorIds": [
+      "M002"
+    ],
+    "expectedAnswer": "M002's seniority is not provided in the dataset (null). The system should state that it is unknown rather than guessing."
+  },
+  {
+    "id": "Q025",
+    "category": "data_quality",
+    "query": "Is M037 experienced with n8n, Make, or Zapier?",
+    "expectedMentorIds": [
+      "M037"
+    ],
+    "expectedAnswer": "The dataset lists M037's AI subdomain as AI Product, but its AI tools list is empty. It does not confirm experience with n8n, Make, or Zapier, so the system should not claim that M037 knows those tools."
+  },
+  {
+    "id": "Q026",
+    "category": "semantic_recommendation",
+    "query": "I am interested in product management in gaming or media.",
+    "expectedMentorIds": [
+      "M014"
+    ],
+    "expectedAnswer": "M014 is in Product Management, lists Media and Gaming among sectors of expertise, and lists Product Management as a role of expertise."
+  },
+  {
+    "id": "Q027",
+    "category": "semantic_recommendation",
+    "query": "I need a mentor who understands logistics and delivery operations.",
+    "expectedMentorIds": [
+      "M001",
+      "M016",
+      "M031",
+      "M050"
+    ],
+    "expectedAnswer": "M001 lists Delivery/Logistics among sectors of expertise. M016 lists Delivery/Logistics among sectors. M031 lists Delivery/Logistics among sectors. M050 lists Logistics among sectors of expertise and has Climatetech as its master sector."
+  },
+  {
+    "id": "Q028",
+    "category": "constraint_handling",
+    "query": "Recommend a mentor with confirmed expertise in AI Product, and tell me which tools are actually listed.",
+    "expectedMentorIds": [
+      "M033",
+      "M037"
+    ],
+    "expectedAnswer": "M033 and M037 list AI Product as an AI subdomain. M033 lists n8n, Langflow, and Make as AI tools. M037 has no AI tools listed. The response should distinguish confirmed tools from missing information."
+  },
+  {
+    "id": "Q029",
+    "category": "semantic_recommendation",
+    "query": "I want help with marketing automation and using AI tools for marketing work.",
+    "expectedMentorIds": [
+      "M042",
+      "M027",
+      "M030"
+    ],
+    "expectedAnswer": "M042 lists Marketing as its domain and lists tools including n8n, Notion AI, Make, Vercel, Canva, and Gamma. M027 lists Marketing as its domain and AI-adjacent tools such as HubSpot, Factors.ai, Google Ads, and LinkedIn Ads. M030 lists Marketing as its domain and n8n, Zapier, and Make as AI tools. These are possible matches based on the recorded domains and tools."
+  },
+  {
+    "id": "Q030",
+    "category": "data_quality",
+    "query": "Can you guarantee that the mentor with the highest mentorship quality rating is the best match for my career problem?",
+    "expectedMentorIds": [],
+    "expectedAnswer": "No. Mentorship quality is not a substitute for relevance to a student's career problem, and the dataset has missing quality values. Recommendations should be based on the student's needs and the mentor's documented domain, sectors, roles, and tools. Do not claim a guaranteed best match."
+  }
+]
