@@ -16,11 +16,11 @@ if str(BACKEND_DIR) not in sys.path:
 # Load environment variables
 load_dotenv(BACKEND_DIR / ".env")
 
+import requests
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langchain_chroma import Chroma
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
-from flashrank import Ranker, RerankRequest
 from agent.ranking import rank_candidates, RankingWeights
 
 # Paths
@@ -30,8 +30,52 @@ DATA_FILE = BACKEND_DIR / "data" / "mentors.json"
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 
-# Initialize local FlashRank reranker (ms-marco-TinyBERT-L-2-v2)
-ranker = Ranker(model_name="ms-marco-TinyBERT-L-2-v2")
+def rerank_passages(query: str, passages: List[Dict[str, str]]) -> List[Dict[str, Any]]:
+    """
+    API-based reranker using OpenRouter's nvidia/llama-nemotron-rerank-vl-1b-v2:free.
+    Replaces local CPU ONNX FlashRank to eliminate CPU/RAM spikes and prevent cloud server (Render) OOM kills.
+    Falls back gracefully if network/API is unavailable.
+    """
+    if not passages:
+        return []
+
+    api_key = os.getenv("OPENROUTER_API_KEY") or OPENROUTER_API_KEY
+    if api_key:
+        try:
+            res = requests.post(
+                "https://openrouter.ai/api/v1/rerank",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "nvidia/llama-nemotron-rerank-vl-1b-v2:free",
+                    "query": query,
+                    "documents": [p["text"] for p in passages]
+                },
+                timeout=12
+            )
+            if res.status_code == 200:
+                data = res.json()
+                results = data.get("results", [])
+                reranked = []
+                for item in results:
+                    idx = item.get("index")
+                    if idx is not None and 0 <= idx < len(passages):
+                        score = float(item.get("relevance_score", 0.0))
+                        reranked.append({
+                            "id": passages[idx]["id"],
+                            "score": score
+                        })
+                if reranked:
+                    return reranked
+            else:
+                print(f"Notice: OpenRouter rerank API returned {res.status_code}: {res.text[:120]}")
+        except Exception as e:
+            print(f"Notice: OpenRouter rerank API exception: {e}")
+
+    # Fallback if API fails or key is missing: preserve original order with default normalized scores
+    return [{"id": p["id"], "score": 1.0 - (i * 0.02)} for i, p in enumerate(passages)]
 
 
 # ==============================================================================
@@ -346,9 +390,8 @@ def recommend(
                 "text": doc.page_content
             })
 
-    # FlashRank Reranker
-    rerank_request = RerankRequest(query=question, passages=passages)
-    reranked = ranker.rerank(rerank_request)
+    # API-based Reranker (OpenRouter nvidia/llama-nemotron-rerank-vl-1b-v2:free)
+    reranked = rerank_passages(question, passages)
 
     candidate_list = []
     for item in reranked:

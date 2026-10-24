@@ -13,8 +13,8 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
-from flashrank import Ranker, RerankRequest
 from agent.ranking import rank_candidates
+from agent.recommender import rerank_passages
 
 DB = ROOT / "data" / "chroma_db"
 QUESTIONS = ROOT / "data" / "questions.json"
@@ -31,8 +31,6 @@ vector_store = Chroma(
     embedding_function=embeddings
 )
 
-# Initialize FlashRank local cross-encoder reranker
-ranker = Ranker(model_name="ms-marco-TinyBERT-L-2-v2")
 
 
 def log_to_readme(search_type: str, k: int, summary: dict):
@@ -129,8 +127,7 @@ def evaluate(strategy: str = "weighted", k: int = 5, fetch_k: int = 25, num_eval
                 {"id": doc.metadata["mentorId"], "text": doc.page_content}
                 for doc, _ in raw_results
             ]
-            rerank_request = RerankRequest(query=q_text, passages=passages)
-            reranked_results = ranker.rerank(rerank_request)
+            reranked_results = rerank_passages(q_text, passages)
             retrieved = [p["id"] for p in reranked_results[:k]]
         else:
             # Weighted strategy: FlashRank rerank + explainable weighted scoring
@@ -153,8 +150,7 @@ def evaluate(strategy: str = "weighted", k: int = 5, fetch_k: int = 25, num_eval
                     candidates_by_id[m_id] = prof
                     passages.append({"id": m_id, "text": doc.page_content})
 
-            rerank_request = RerankRequest(query=q_text, passages=passages)
-            reranked_results = ranker.rerank(rerank_request)
+            reranked_results = rerank_passages(q_text, passages)
 
             cand_list = []
             for item in reranked_results:
