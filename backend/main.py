@@ -6,6 +6,7 @@ import uvicorn
 from db.mongo import connect_to_mongo, close_mongo_connection
 from routes.mentors_routes import router as mentors_router
 from routes.agent_routes import router as agent_router
+from routes.auth_routes import router as auth_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -32,6 +33,7 @@ app.add_middleware(
 )
 
 # Include Routers
+app.include_router(auth_router, prefix="/api")
 app.include_router(mentors_router, prefix="/api")
 app.include_router(agent_router, prefix="/api")
 

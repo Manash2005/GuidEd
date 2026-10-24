@@ -3,6 +3,7 @@ fastapi>=0.115.0
 uvicorn[standard]>=0.30.0
 pydantic>=2.0.0
 pydantic-settings>=2.0.0
+email-validator>=2.0.0
 
 # Database (MongoDB Async Driver & PyMongo)
 motor>=3.6.0
@@ -19,6 +20,15 @@ langchain-openai>=0.2.0
 chromadb>=0.5.0
 langchain-chroma>=0.1.0
 flashrank>=0.2.0
+fastembed>=0.9.0
 
-# Environment variables
+# Authentication & Security
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.0
+pyjwt>=2.8.0
+
+# Environment & Network
 python-dotenv>=1.0.0
+certifi>=2024.0.0
+httpx>=0.27.0
+pytest>=8.0.0

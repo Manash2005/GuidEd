@@ -31,7 +31,7 @@ chroma_data/
 
 # Downloaded model caches
 .cache/
-models/
+model_weights/
 
 # Logs
 *.log

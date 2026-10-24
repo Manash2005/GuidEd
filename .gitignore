@@ -1,0 +1,8 @@
+.DS_Store
+.vscode/
+.idea/
+*.log
+scratch/
+backend/.env
+backend/.env.*
+!backend/.env.example

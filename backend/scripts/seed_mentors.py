@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from config import MONGODB_URI, DATABASE_NAME, MENTORS_FILE
-from models.mentor import MentorBase
+from models.mentor_model import MentorBase
 
 def seed():
     if not MONGODB_URI:
