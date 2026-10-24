@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from agent.recommender import recommend, MentorRecommendation
+from agent.guardrails import validate_query
 
 router = APIRouter(prefix="/agent", tags=["AI Agent & Recommendations"])
 
@@ -43,14 +44,16 @@ class RecommendResponse(BaseModel):
 
 @router.post("/recommend", response_model=RecommendResponse)
 async def recommend_mentors(payload: RecommendRequest):
-    """
-    Structured AI Mentor Recommendations:
-    1. ChromaDB retrieves top candidate mentors by semantic similarity.
-    2. Applies any hard constraints (seniority, city, domain, tools).
-    3. Sends candidate profiles + query to LLM for grounded reasoning.
-    4. Validates mentor IDs against retrieved candidates to prevent hallucination.
-    5. Returns structured recommendations with reasons, evidence, and limitations.
-    """
+    guard = validate_query(payload.query)
+    if not guard.is_allowed:
+        return RecommendResponse(
+            question=payload.query,
+            hasMatches=False,
+            summary=guard.reason or "GuidEd only supports career and mentorship inquiries.",
+            recommendations=[],
+            candidatesConsidered=0
+        )
+
     try:
         result = recommend(
             question=payload.query,
