@@ -13,6 +13,8 @@ from models.booking_model import (
     TimeSlot
 )
 from utils.auth import get_current_user
+from services.google_calendar import create_calendar_event, delete_calendar_event
+from services.email_service import send_booking_confirmation, send_booking_cancellation
 
 router = APIRouter(prefix="/bookings", tags=["Mentor Bookings"])
 
@@ -143,6 +145,17 @@ async def create_booking(
         )
 
     booking_id = f"bk_{uuid.uuid4().hex[:12]}"
+    cal_event = await create_calendar_event(
+        booking_id=booking_id,
+        mentor_id=clean_mentor_id,
+        mentor_name=mentor_name,
+        student_name=current_user.fullName,
+        student_email=current_user.email,
+        slot_start=slot_start,
+        slot_end=slot_end,
+        topic=payload.topic.strip()
+    )
+
     booking_doc = {
         "bookingId": booking_id,
         "userId": current_user.userId,
@@ -155,13 +168,18 @@ async def create_booking(
         "durationMinutes": payload.durationMinutes,
         "status": "confirmed",
         "topic": payload.topic.strip(),
-        "meetingLink": None,
-        "calendarEventId": None,
+        "meetingLink": cal_event.get("meetingLink"),
+        "calendarEventId": cal_event.get("calendarEventId"),
         "createdAt": now,
         "updatedAt": now
     }
 
     await db["bookings"].insert_one(booking_doc)
+
+    try:
+        await send_booking_confirmation(booking_doc)
+    except Exception as e:
+        print(f"Warning: Confirmation email notification error: {e}")
 
     return BookingResponse(**booking_doc)
 
@@ -216,6 +234,13 @@ async def cancel_booking(
     if booking.get("status") == "cancelled":
         return BookingResponse(**booking)
 
+    cal_event_id = booking.get("calendarEventId")
+    if cal_event_id:
+        try:
+            await delete_calendar_event(cal_event_id)
+        except Exception:
+            pass
+
     now = _now()
     await db["bookings"].update_one(
         {"bookingId": booking_id},
@@ -223,5 +248,10 @@ async def cancel_booking(
     )
     booking["status"] = "cancelled"
     booking["updatedAt"] = now
+
+    try:
+        await send_booking_cancellation(booking)
+    except Exception as e:
+        print(f"Warning: Cancellation email notification error: {e}")
 
     return BookingResponse(**booking)

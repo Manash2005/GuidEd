@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from db.mongo import connect_to_mongo, close_mongo_connection
+from middleware.security import SecurityHeadersMiddleware, RateLimiterMiddleware
 from routes.mentors_routes import router as mentors_router
 from routes.agent_routes import router as agent_router
 from routes.auth_routes import router as auth_router
@@ -24,6 +25,10 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Security and rate limiting middlewares
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RateLimiterMiddleware)
 
 # Enable CORS for frontend clients
 app.add_middleware(
