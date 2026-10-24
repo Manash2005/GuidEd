@@ -16,12 +16,25 @@ if str(BACKEND_DIR) not in sys.path:
 # Load environment variables
 load_dotenv(BACKEND_DIR / ".env")
 
+import concurrent.futures
 import requests
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langchain_chroma import Chroma
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from agent.ranking import rank_candidates, RankingWeights
+
+def _safe_vector_search(query: str, k: int, filter_dict: Optional[Dict]) -> List:
+    """Run vector search with exception containment."""
+    try:
+        vs = get_vector_store()
+        try:
+            return vs.similarity_search_with_score(query, k=k, filter=filter_dict)
+        except Exception:
+            return vs.similarity_search_with_score(query, k=k)
+    except Exception as e:
+        print(f"Notice: Vector search inner exception: {e}")
+        return []
 
 # Paths
 CHROMA_DIR = BACKEND_DIR / "data" / "chroma_db"
@@ -318,32 +331,53 @@ def recommend(
             "isFollowUp": True
         }
 
-    vector_store = get_vector_store()
     where_filter = build_chroma_where(constraints)
-
+    raw_results = []
     try:
-        raw_results = vector_store.similarity_search_with_score(
-            question,
-            k=fetch_k,
-            filter=where_filter
-        )
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_safe_vector_search, question, fetch_k, where_filter)
+            raw_results = future.result(timeout=2.0)
+    except concurrent.futures.TimeoutError:
+        print("Notice: Vector search timed out after 2s on cloud. Immediate fast fallback to catalog.")
+        raw_results = []
     except Exception as e:
-        print(f"Warning: Vector search with filter failed: {e}. Retrying without filter.")
-        raw_results = vector_store.similarity_search_with_score(question, k=fetch_k)
+        print(f"Notice: Vector search error: {e}. Falling back to catalog.")
+        raw_results = []
 
     candidates_by_id = {}
     passages = []
 
     if not raw_results:
-        print("Notice: Vector search returned 0 results. Auto-falling back to mentors.json catalog ranking...")
+        print("Notice: Auto-falling back to mentors.json verified catalog ranking...")
         try:
             if DATA_FILE.exists():
                 with open(DATA_FILE, "r", encoding="utf-8") as f:
                     all_mentors = json.load(f)
-                ranked_pre = rank_candidates(question, all_mentors, weights=RankingWeights())
-                qualifying = [m for m, sc in ranked_pre if sc.total_score >= 40][:fetch_k]
+
+                # Filter hard constraints if provided
+                filtered_catalog = []
+                if constraints:
+                    for m in all_mentors:
+                        match = True
+                        for k_field, v_val in constraints.items():
+                            if v_val and str(m.get(k_field, "")).lower() != str(v_val).lower():
+                                match = False
+                                break
+                        if match:
+                            filtered_catalog.append(m)
+                else:
+                    filtered_catalog = all_mentors
+
+                if not filtered_catalog:
+                    filtered_catalog = all_mentors
+
+                ranked_pre = rank_candidates(question, filtered_catalog, top_k=len(filtered_catalog))
+                qualifying = [
+                    m for m in ranked_pre
+                    if m.get("_match_percentage", 0) >= 30 or m.get("_composite_score", 0) >= 0.30
+                ][:fetch_k]
                 if not qualifying and ranked_pre:
-                    qualifying = [m for m, _ in ranked_pre[:top_k]]
+                    qualifying = ranked_pre[:top_k]
 
                 for m in qualifying:
                     mid = m.get("mentorId")

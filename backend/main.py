@@ -23,20 +23,24 @@ async def lifespan(app: FastAPI):
     await connect_to_mongo()
     await bootstrap_initial_admin()
 
-    # Ensure ChromaDB vector store is populated
-    try:
-        from agent.recommender import get_vector_store
-        from agent.ingestion.indexer import index_mentors
-        vs = get_vector_store()
-        count = vs._collection.count()
-        if count < 10:
-            print(f"ChromaDB has {count} records. Auto-indexing mentors from mentors.json...")
-            index_mentors()
-            print("ChromaDB auto-indexing completed.")
-        else:
-            print(f"ChromaDB ready with {count} mentors.")
-    except Exception as e:
-        print(f"Notice: ChromaDB startup check: {e}")
+    # Ensure ChromaDB vector store is populated non-blockingly
+    async def _async_chroma_init():
+        try:
+            from agent.recommender import get_vector_store
+            from agent.ingestion.indexer import index_mentors
+            vs = get_vector_store()
+            count = vs._collection.count()
+            if count < 10:
+                print(f"ChromaDB has {count} records. Auto-indexing mentors from mentors.json...")
+                index_mentors()
+                print("ChromaDB auto-indexing completed.")
+            else:
+                print(f"ChromaDB ready with {count} mentors.")
+        except Exception as e:
+            print(f"Notice: ChromaDB startup check: {e}")
+
+    import asyncio
+    asyncio.create_task(_async_chroma_init())
 
     yield
     # Shutdown: Close MongoDB connection
