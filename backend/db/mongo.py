@@ -17,7 +17,7 @@ async def connect_to_mongo():
         db_instance.client = AsyncIOMotorClient(
             MONGODB_URI,
             tlsCAFile=certifi.where(),
-            serverSelectionTimeoutMS=3000
+            serverSelectionTimeoutMS=10000
         )
         db_instance.db = db_instance.client[DATABASE_NAME]
         print(f"Initialized MongoDB client for database: {DATABASE_NAME}")

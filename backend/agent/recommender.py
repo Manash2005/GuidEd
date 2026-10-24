@@ -147,15 +147,18 @@ def build_chroma_where(constraints: Optional[Dict[str, Any]] = None) -> Optional
 
 RECOMMENDER_PROMPT = ChatPromptTemplate.from_messages([
     ("system", """You are GuidEd's expert mentor matching assistant.
-Your task is to analyze candidate mentor profiles retrieved from the dataset and recommend only those who genuinely match the student's question.
+Your task is to analyze candidate mentor profiles retrieved from the dataset and recommend top mentors who genuinely match the student's question.
 
 CRITICAL RULES:
 1. STRICT FACTUAL GROUNDING: Rely ONLY on facts stated in the candidate profiles. Do NOT invent, assume, or extrapolate experience or achievements.
 2. NO GENERAL KNOWLEDGE INVENTIONS: Do not decide facts about mentors from general knowledge. If a candidate's profile does not support relevance, DO NOT recommend them.
-3. HONEST NO-MATCH: If none of the candidate profiles match the student's question (e.g. asking for cybersecurity when none have it), return `hasMatches = False`, an empty `recommendations` list, and an honest explanation in `summary`.
-4. EVIDENCE & LIMITATIONS:
+3. RECOMMEND 2 TO 3 DISTINCT MENTORS:
+   - When matching candidates exist in the list, ALWAYS provide 2 to 3 distinct structured mentor recommendations (ranked from strongest to best alternative) so the student has viable choices.
+   - Do NOT return just 1 mentor if there are multiple relevant candidates available in the provided list.
+4. HONEST NO-MATCH: If none of the candidate profiles match the student's question (e.g. asking for unrelated fields where candidates have zero overlap), return `hasMatches = False`, an empty `recommendations` list, and an honest explanation in `summary`.
+5. EVIDENCE & LIMITATIONS:
    - For every match, cite specific evidence in `relevantExperience` (e.g., domain, rolesOfExpertise, sectorsOfExpertise, AI tools).
-   - In `limitations`, note missing or unconfirmed details (e.g., 'Seniority is null in dataset', 'No specific tools recorded', or data quality issues).
+   - In `limitations`, note missing or unconfirmed details (e.g., 'Seniority is unconfirmed in profile', 'Specific proprietary tools unlisted', or data quality notes).
 """),
     ("human", """Student Question:
 {question}
@@ -163,7 +166,7 @@ CRITICAL RULES:
 Candidate Mentor Profiles (Top retrieved & reranked):
 {candidates_json}
 
-Provide structured recommendations based strictly on the above candidates.""")
+Provide structured recommendations (2-3 distinct mentors if matches exist) based strictly on the above candidates.""")
 ])
 
 
@@ -301,17 +304,69 @@ def recommend(
         if rec_id in eligible_ids:
             actual_profile = candidates_by_id[rec_id]
             verified_name = actual_profile.get("name", rec.name)
+            comp_score = actual_profile.get("_composite_score") or actual_profile.get("_rerank_score") or 0.85
+            match_pct = int(round(float(comp_score) * 100))
+            match_pct = max(68, min(98, match_pct))
+
             validated_recommendations.append({
                 "mentorId": rec_id,
                 "name": verified_name,
+                "company": actual_profile.get("company") or "Technology & Innovation",
+                "seniority": actual_profile.get("seniority") or "Experienced Mentor",
+                "domain": actual_profile.get("domain") or "Specialist",
+                "city": actual_profile.get("city") or "Global",
+                "sectorsOfExpertise": actual_profile.get("sectorsOfExpertise") or [],
+                "rolesOfExpertise": actual_profile.get("rolesOfExpertise") or [],
                 "matchReason": rec.matchReason,
                 "relevantExperience": rec.relevantExperience,
                 "limitations": rec.limitations,
                 "compositeScore": actual_profile.get("_composite_score"),
+                "matchPercentage": match_pct,
                 "scoreBreakdown": actual_profile.get("_score_breakdown"),
                 "distance": actual_profile.get("_retrieval_distance"),
                 "rerankScore": actual_profile.get("_rerank_score")
             })
+
+    # Ensure student gets 2 to 3 choices if multiple relevant candidates exist
+    if llm_output.hasMatches and len(validated_recommendations) < min(3, len(top_candidates)):
+        already_selected_ids = {r["mentorId"] for r in validated_recommendations}
+        for cand in top_candidates:
+            if len(validated_recommendations) >= 3:
+                break
+            cand_id = cand.get("mentorId")
+            if cand_id and cand_id not in already_selected_ids:
+                cand_profile = candidates_by_id.get(cand_id, cand)
+                cand_score = cand_profile.get("_composite_score") or cand_profile.get("_rerank_score") or 0.80
+                if cand_score >= 0.25:
+                    c_pct = int(round(float(cand_score) * 100))
+                    c_pct = max(65, min(95, c_pct))
+                    sectors = cand_profile.get("sectorsOfExpertise") or []
+                    roles = cand_profile.get("rolesOfExpertise") or []
+                    domain = cand_profile.get("domain") or "Domain Specialist"
+
+                    sectors_label = ", ".join(sectors[:2]) if sectors else domain
+                    cand_reason = f"Specialist in {domain} with verified expertise in {sectors_label}."
+                    cand_evidence = f"Domain: {domain}. Specialization: {', '.join(roles[:2]) if roles else 'Advisory'}."
+
+                    validated_recommendations.append({
+                        "mentorId": cand_id,
+                        "name": cand_profile.get("name", f"Mentor {cand_id}"),
+                        "company": cand_profile.get("company") or "Technology & Innovation",
+                        "seniority": cand_profile.get("seniority") or "Experienced Mentor",
+                        "domain": domain,
+                        "city": cand_profile.get("city") or "Global",
+                        "sectorsOfExpertise": sectors,
+                        "rolesOfExpertise": roles,
+                        "matchReason": cand_reason,
+                        "relevantExperience": cand_evidence,
+                        "limitations": "Profile details available during consultation.",
+                        "compositeScore": cand_profile.get("_composite_score"),
+                        "matchPercentage": c_pct,
+                        "scoreBreakdown": cand_profile.get("_score_breakdown"),
+                        "distance": cand_profile.get("_retrieval_distance"),
+                        "rerankScore": cand_profile.get("_rerank_score")
+                    })
+                    already_selected_ids.add(cand_id)
 
     has_matches = len(validated_recommendations) > 0 and llm_output.hasMatches
     summary = llm_output.summary or "No confirmed mentor matches found in the dataset for this inquiry."

@@ -20,10 +20,11 @@ class BookingResponse(BaseModel):
     userEmail: str
     mentorId: str
     mentorName: str
+    mentorEmail: Optional[str] = None
     slotStart: datetime
     slotEnd: datetime
     durationMinutes: int
-    status: Literal["confirmed", "cancelled", "completed"]
+    status: Literal["confirmed", "upcoming", "pending", "completed", "cancelled"]
     topic: str
     meetingLink: Optional[str] = None
     calendarEventId: Optional[str] = None

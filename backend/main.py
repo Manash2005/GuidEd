@@ -5,16 +5,21 @@ import uvicorn
 
 from db.mongo import connect_to_mongo, close_mongo_connection
 from middleware.security import SecurityHeadersMiddleware, RateLimiterMiddleware
+from utils.auth import bootstrap_initial_admin
 from routes.mentors_routes import router as mentors_router
 from routes.agent_routes import router as agent_router
 from routes.auth_routes import router as auth_router
 from routes.chat_routes import router as chat_router
 from routes.booking_routes import router as booking_router
+from routes.student_routes import router as student_router
+from routes.mentor_routes import router as mentor_router
+from routes.admin_routes import router as admin_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Connect to MongoDB
+    # Startup: Connect to MongoDB & bootstrap admin
     await connect_to_mongo()
+    await bootstrap_initial_admin()
     yield
     # Shutdown: Close MongoDB connection
     await close_mongo_connection()
@@ -45,6 +50,9 @@ app.include_router(mentors_router, prefix="/api")
 app.include_router(agent_router, prefix="/api")
 app.include_router(chat_router, prefix="/api")
 app.include_router(booking_router, prefix="/api")
+app.include_router(student_router, prefix="/api")
+app.include_router(mentor_router, prefix="/api")
+app.include_router(admin_router, prefix="/api")
 
 @app.get("/")
 async def root():

@@ -36,10 +36,19 @@ class InMemoryUsersCollection:
     async def find_one(self, filter_dict, projection=None):
         for doc in self.docs:
             matched = True
-            for k, v in filter_dict.items():
-                if doc.get(k) != v:
+            if "$or" in filter_dict:
+                or_matched = False
+                for branch in filter_dict["$or"]:
+                    if all(doc.get(k) == v for k, v in branch.items()):
+                        or_matched = True
+                        break
+                if not or_matched:
                     matched = False
-                    break
+            else:
+                for k, v in filter_dict.items():
+                    if doc.get(k) != v:
+                        matched = False
+                        break
             if matched:
                 res = doc.copy()
                 if projection:

@@ -98,18 +98,30 @@ GuidEd is an enterprise-grade AI mentorship matching and scheduling platform bui
 - Idempotency key tracking in MongoDB (`notifications` collection) preventing duplicate email dispatch on network retries.
 - Production SMTP integration with simulated fallback for local development.
 
+### 👥 Role-Based Access Control (RBAC) & Dedicated Dashboards
+- **Student Role (`student`):** Career AI advisor, mentor recommendations with explainable ranking, time slot scheduler, own booking history, Google Meet access, and profile customization. Strict isolation prevents cross-student data leakage.
+- **Mentor Role (`mentor`):** Dedicated mentor dashboard with upcoming session countdowns, booking status transitions (`confirmed` / `completed`), and authorized student context for scheduled sessions (enforcing privacy boundaries without exposing unrelated chat histories).
+- **Admin Role (`admin`):** Superadmin console featuring aggregated MongoDB statistics (students, mentors, bookings, conversation volume, completion/cancellation rates, top mentors, domain trends), user management with role promotions and account suspension, platform-wide booking supervision, and tamper-evident audit logging.
+- **Server-Authoritative Enforcement:** Role claims in JWTs are re-validated against MongoDB on every request via `get_current_user`, guaranteeing immediate revocation upon account suspension or role demotion.
+- **Zero Public Admin Registration:** Public registration is strictly constrained to `student` or `mentor` accounts. Initial admin bootstrap is performed safely via environment configuration (`INITIAL_ADMIN_EMAIL`, `INITIAL_ADMIN_PASSWORD`).
+
 ---
 
 # 🧪 Automated Test Verification
 
-Total Tests Passing: 60 / 60 (100% Pass Rate)
+Total Tests Passing: 80 / 80 (100% Pass Rate across Backend & Frontend)
 
-- `agent/tests/test_guardrails.py`: 21 passed (injection defense, boundary validation, career queries)
-- `agent/tests/test_ranking.py`: 7 passed (ranking formula, component breakdown, ordering)
-- `tests/test_auth.py`: 6 passed (bcrypt hashing, JWT tokens, expiry, PII masking)
-- `tests/test_booking.py`: 4 passed (slot generation, double-booking prevention, cross-user isolation)
+### Backend Suites (75 passed):
+- `tests/test_rbac.py`: 15 passed (Role isolation, horizontal/vertical escalation defense, token revalidation, admin aggregations)
+- `agent/tests/test_guardrails.py`: 21 passed (Injection defense, boundary validation, career queries)
+- `agent/tests/test_ranking.py`: 7 passed (Ranking formula, component breakdown, ordering)
+- `tests/test_auth.py`: 6 passed (Bcrypt hashing, JWT tokens, expiry, PII masking)
+- `tests/test_booking.py`: 4 passed (Slot generation, double-booking prevention, cross-user isolation)
 - `tests/test_calendar.py`: 6 passed (OAuth refresh, live Google Meet link generation, deletion)
-- `tests/test_chat.py`: 8 passed (multi-turn threads, ownership security, deletion)
-- `tests/test_e2e_lifecycle.py`: 3 passed (security headers, rate limiting, full student lifecycle)
-- `tests/test_email.py`: 5 passed (template rendering, idempotency deduplication, async delivery)
+- `tests/test_chat.py`: 8 passed (Multi-turn threads, ownership security, deletion)
+- `tests/test_e2e_lifecycle.py`: 3 passed (Security headers, rate limiting, full student lifecycle)
+- `tests/test_email.py`: 5 passed (Template rendering, idempotency deduplication, async delivery)
+
+### Frontend Suites (5 passed):
+- `frontend/src/__tests__/RouteGuards.test.jsx`: 5 passed (Unauthenticated redirection, role authorization, access-denied handling, suspended user blocking)
 

@@ -23,7 +23,7 @@ class ConversationSummaryResponse(BaseModel):
     conversationId: str
     userId: str
     title: str
-    messageCount: int
+    messageCount: int = Field(default=0)
     createdAt: datetime
     updatedAt: datetime
 

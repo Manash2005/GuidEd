@@ -95,19 +95,37 @@ async def send_email_idempotent(
 async def send_booking_confirmation(booking: Dict[str, Any]) -> Dict[str, Any]:
     booking_id = booking.get("bookingId", "")
     recipient = booking.get("userEmail", "")
-    if not recipient:
+    mentor_email = booking.get("mentorEmail", "")
+    if not recipient and not mentor_email:
         return {"status": "skipped", "reason": "missing_recipient"}
 
-    idempotency_key = f"email_confirm_{booking_id}"
     subject, html = render_booking_confirmation_email(booking)
-    return await send_email_idempotent(recipient, subject, html, idempotency_key, booking_id)
+    student_res = {"status": "skipped", "reason": "no_student_email"}
+    if recipient:
+        idempotency_key = f"email_confirm_{booking_id}"
+        student_res = await send_email_idempotent(recipient, subject, html, idempotency_key, booking_id)
+
+    if mentor_email:
+        mentor_key = f"email_confirm_mentor_{booking_id}"
+        await send_email_idempotent(mentor_email, subject, html, mentor_key, booking_id)
+
+    return student_res if recipient else {"status": "sent"}
 
 async def send_booking_cancellation(booking: Dict[str, Any]) -> Dict[str, Any]:
     booking_id = booking.get("bookingId", "")
     recipient = booking.get("userEmail", "")
-    if not recipient:
+    mentor_email = booking.get("mentorEmail", "")
+    if not recipient and not mentor_email:
         return {"status": "skipped", "reason": "missing_recipient"}
 
-    idempotency_key = f"email_cancel_{booking_id}"
     subject, html = render_booking_cancellation_email(booking)
-    return await send_email_idempotent(recipient, subject, html, idempotency_key, booking_id)
+    student_res = {"status": "skipped", "reason": "no_student_email"}
+    if recipient:
+        idempotency_key = f"email_cancel_{booking_id}"
+        student_res = await send_email_idempotent(recipient, subject, html, idempotency_key, booking_id)
+
+    if mentor_email:
+        mentor_key = f"email_cancel_mentor_{booking_id}"
+        await send_email_idempotent(mentor_email, subject, html, mentor_key, booking_id)
+
+    return student_res if recipient else {"status": "sent"}

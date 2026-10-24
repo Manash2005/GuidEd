@@ -156,6 +156,12 @@ async def create_booking(
         topic=payload.topic.strip()
     )
 
+    mentor_user = await db["users"].find_one({"mentorId": clean_mentor_id})
+    mentor_email = mentor_user.get("email") if mentor_user else None
+    if not mentor_email:
+        mentor_doc = await db["mentors"].find_one({"mentorId": clean_mentor_id})
+        mentor_email = mentor_doc.get("email") if mentor_doc else None
+
     booking_doc = {
         "bookingId": booking_id,
         "userId": current_user.userId,
@@ -163,6 +169,7 @@ async def create_booking(
         "userEmail": current_user.email,
         "mentorId": clean_mentor_id,
         "mentorName": mentor_name,
+        "mentorEmail": mentor_email,
         "slotStart": slot_start,
         "slotEnd": slot_end,
         "durationMinutes": payload.durationMinutes,
@@ -210,7 +217,11 @@ async def get_booking(
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
 
-    if booking["userId"] != current_user.userId:
+    is_owner = booking["userId"] == current_user.userId
+    is_assigned_mentor = current_user.role == "mentor" and current_user.mentorId == booking.get("mentorId")
+    is_admin = current_user.role == "admin"
+
+    if not (is_owner or is_assigned_mentor or is_admin):
         raise HTTPException(status_code=403, detail="Access denied to this booking")
 
     return BookingResponse(**booking)
@@ -228,7 +239,9 @@ async def cancel_booking(
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
 
-    if booking["userId"] != current_user.userId:
+    is_owner = booking["userId"] == current_user.userId
+    is_admin = current_user.role == "admin"
+    if not (is_owner or is_admin):
         raise HTTPException(status_code=403, detail="Access denied to this booking")
 
     if booking.get("status") == "cancelled":
