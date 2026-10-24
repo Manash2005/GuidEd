@@ -232,32 +232,6 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Navigation Tabs */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-[#E4E7EC] pb-2">
-        {[
-          { id: 'stats', label: 'Platform KPIs & Trends', icon: Activity },
-          { id: 'users', label: `Users & Mentors (${usersTotal})`, icon: Users },
-          { id: 'bookings', label: `Bookings & Oversight (${bookingsTotal})`, icon: Calendar },
-          { id: 'audit', label: 'Audit Trail', icon: FileText }
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setSearchParams(tab.id === 'stats' ? {} : { tab: tab.id })}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition cursor-pointer ${
-                isActive
-                  ? 'bg-[#315E9E] text-white shadow-xs'
-                  : 'text-[#667085] hover:text-[#202124] hover:bg-[#F8F9FA]'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
 
       {/* ========================================================================= */}
       {/* TAB 1: VERIFIED MONGODB KPIS & ACTIVITY METRICS */}

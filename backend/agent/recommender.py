@@ -287,7 +287,33 @@ def recommend(
         print(f"Warning: Vector search with filter failed: {e}. Retrying without filter.")
         raw_results = vector_store.similarity_search_with_score(question, k=fetch_k)
 
+    candidates_by_id = {}
+    passages = []
+
     if not raw_results:
+        print("Notice: Vector search returned 0 results. Auto-falling back to mentors.json catalog ranking...")
+        try:
+            if DATA_FILE.exists():
+                with open(DATA_FILE, "r", encoding="utf-8") as f:
+                    all_mentors = json.load(f)
+                ranked_pre = rank_candidates(question, all_mentors, weights=RankingWeights())
+                qualifying = [m for m, sc in ranked_pre if sc.total_score >= 40][:fetch_k]
+                if not qualifying and ranked_pre:
+                    qualifying = [m for m, _ in ranked_pre[:top_k]]
+
+                for m in qualifying:
+                    mid = m.get("mentorId")
+                    if mid and mid not in candidates_by_id:
+                        m["_retrieval_distance"] = 0.5
+                        candidates_by_id[mid] = m
+                        passages.append({
+                            "id": mid,
+                            "text": f"Name: {m.get('name')}. Domain: {m.get('domain')}. Roles: {', '.join(m.get('rolesOfExpertise') or [])}. Sectors: {', '.join(m.get('sectorsOfExpertise') or [])}. Seniority: {m.get('seniority')}"
+                        })
+        except Exception as e:
+            print(f"Fallback catalog retrieval error: {e}")
+
+    if not raw_results and not candidates_by_id:
         return {
             "question": question,
             "hasMatches": False,
@@ -296,9 +322,6 @@ def recommend(
             "candidatesConsidered": 0,
             "isFollowUp": False
         }
-
-    candidates_by_id = {}
-    passages = []
 
     for doc, distance in raw_results:
         meta = doc.metadata or {}

@@ -26,8 +26,9 @@ htmlcov/
 .pyright/
 
 # ChromaDB persistent storage
-chroma_db/
+# Local scratch chroma dirs are ignored, but pre-indexed dataset is tracked
 chroma_data/
+!data/chroma_db/
 
 # Downloaded model caches
 .cache/

@@ -417,57 +417,6 @@ export default function StudentDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Tab Navigation Subheader */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[#E4E7EC]">
-        <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-[#E4E7EC] shadow-xs">
-          <button
-            onClick={() => setActiveTab('chat')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition cursor-pointer ${
-              activeTab === 'chat'
-                ? 'bg-[#315E9E] text-white shadow-xs'
-                : 'text-[#667085] hover:text-[#202124] hover:bg-[#F8F9FA]'
-            }`}
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span>AI Career Advisor</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('bookings')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition cursor-pointer ${
-              activeTab === 'bookings'
-                ? 'bg-[#315E9E] text-white shadow-xs'
-                : 'text-[#667085] hover:text-[#202124] hover:bg-[#F8F9FA]'
-            }`}
-          >
-            <Calendar className="w-4 h-4" />
-            <span>Upcoming Sessions ({bookings.filter((b) => b.status === 'confirmed').length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('profile')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition cursor-pointer ${
-              activeTab === 'profile'
-                ? 'bg-[#315E9E] text-white shadow-xs'
-                : 'text-[#667085] hover:text-[#202124] hover:bg-[#F8F9FA]'
-            }`}
-          >
-            <User className="w-4 h-4" />
-            <span>Account Settings</span>
-          </button>
-        </div>
-
-        {activeTab === 'chat' && (
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="md:hidden flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-[#315E9E] bg-[#EFF4FA] border border-[#D0DCEB] rounded-lg"
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            <span>{sidebarOpen ? 'Hide History' : 'Chat History'}</span>
-          </button>
-        )}
-      </div>
-
       {/* ========================================================================= */}
       {/* TAB 1: CHAT-FIRST CAREER ADVISOR WORKSPACE (3 PANELS ON DESKTOP) */}
       {/* ========================================================================= */}
@@ -479,6 +428,18 @@ export default function StudentDashboard() {
               sidebarOpen ? 'block' : 'hidden md:flex'
             }`}
           >
+            {/* Mobile Header with Close Button */}
+            <div className="flex items-center justify-between md:hidden pb-2 mb-2 border-b border-[#E4E7EC]">
+              <span className="text-xs font-bold text-[#202124]">Conversations</span>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="p-1 rounded text-[#667085] hover:text-[#202124] hover:bg-[#F8F9FA]"
+                aria-label="Close sidebar"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
             {/* New Chat Button */}
             <button
               onClick={handleNewChat}
@@ -560,6 +521,14 @@ export default function StudentDashboard() {
             {/* Chat Workspace Header */}
             <div className="p-4 border-b border-[#E4E7EC] flex items-center justify-between bg-white">
               <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="md:hidden flex items-center justify-center p-2 rounded-lg text-[#315E9E] bg-[#EFF4FA] border border-[#D0DCEB] hover:bg-[#E0ECF8] cursor-pointer"
+                  title="Toggle conversation list"
+                  aria-label="Toggle conversation history"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                </button>
                 <div className="w-9 h-9 rounded-lg bg-[#EFF4FA] text-[#315E9E] flex items-center justify-center font-bold text-sm">
                   <Sparkles className="w-4 h-4 text-[#315E9E]" />
                 </div>
@@ -577,10 +546,10 @@ export default function StudentDashboard() {
               {activeConvId && (
                 <button
                   onClick={handleNewChat}
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#315E9E] bg-[#EFF4FA] hover:bg-[#E0ECF8] rounded-lg transition cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#315E9E] bg-[#EFF4FA] hover:bg-[#E0ECF8] rounded-lg transition cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>New Chat</span>
+                  <span className="hidden sm:inline">New Chat</span>
                 </button>
               )}
             </div>

@@ -160,14 +160,25 @@ export default function Navbar() {
           <nav className="flex flex-col gap-1">
             {links.map((link) => {
               const Icon = link.icon;
+              const linkBasePath = link.to.split('?')[0];
+              const linkQuery = link.to.includes('?') ? link.to.split('?')[1] : '';
+              const currentQuery = location.search ? location.search.substring(1) : '';
+              const isActive =
+                location.pathname === linkBasePath &&
+                (linkQuery ? currentQuery === linkQuery : !currentQuery);
+
               return (
                 <Link
                   key={link.to}
                   to={link.to}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[#344054] hover:text-[#315E9E] hover:bg-[#EFF4FA] transition"
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
+                    isActive
+                      ? 'bg-[#EFF4FA] text-[#315E9E] font-semibold'
+                      : 'text-[#344054] hover:text-[#315E9E] hover:bg-[#F8F9FA]'
+                  }`}
                 >
-                  <Icon className="w-4 h-4 text-[#315E9E]" />
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-[#315E9E]' : 'text-[#98A2B3]'}`} />
                   <span>{link.label}</span>
                 </Link>
               );

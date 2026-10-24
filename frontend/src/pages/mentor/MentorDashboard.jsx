@@ -182,32 +182,6 @@ export default function MentorDashboard() {
         </div>
       )}
 
-      {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-[#E4E7EC] pb-2">
-        <button
-          onClick={() => setSearchParams({ tab: 'sessions' })}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition cursor-pointer ${
-            activeTab === 'sessions'
-              ? 'bg-[#315E9E] text-white shadow-xs'
-              : 'text-[#667085] hover:text-[#202124] hover:bg-[#F8F9FA]'
-          }`}
-        >
-          <Calendar className="w-4 h-4" />
-          <span>Consultation Sessions ({bookings.length})</span>
-        </button>
-
-        <button
-          onClick={() => setSearchParams({ tab: 'profile' })}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition cursor-pointer ${
-            activeTab === 'profile'
-              ? 'bg-[#315E9E] text-white shadow-xs'
-              : 'text-[#667085] hover:text-[#202124] hover:bg-[#F8F9FA]'
-          }`}
-        >
-          <UserCheck className="w-4 h-4" />
-          <span>Profile &amp; Email</span>
-        </button>
-      </div>
 
       {/* Tab 1: Sessions List & Student Preparation Context */}
       {activeTab === 'sessions' && (
