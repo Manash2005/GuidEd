@@ -4,6 +4,11 @@ from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 from agent.recommender import get_llm
 
+FRIENDLY_GUARDRAIL_RESPONSE = (
+    "I can help with career planning, professional skills, interview preparation, "
+    "and finding mentors. Could you rephrase your question around your career goals?"
+)
+
 class GuardrailResult(BaseModel):
     is_allowed: bool
     category: str = "career_inquiry"
@@ -38,7 +43,7 @@ OUT_OF_DOMAIN_PATTERNS = [
 ]
 
 CLASSIFIER_PROMPT = ChatPromptTemplate.from_messages([
-    ("system", """You are a strict career-intent moderation filter for GuidEd, a career mentorship platform.
+    ("system", """You are a strict career-intent moderation filter for Mentor Connect, a career mentorship platform.
 Your job is to determine whether the student query is genuinely about career growth, mentorship, job hunting, skill acquisition, transitions, or industry guidance.
 
 ALLOW:
@@ -49,7 +54,7 @@ ALLOW:
 - Seniority, interview preparation, or career pathways
 
 REJECT:
-- Coding homework or code generation requests (e.g., 'write a quicksort in python')
+- Coding homework or arbitrary script generation (e.g., 'write a quicksort in python')
 - Math/physics equations or homework
 - Cooking recipes, entertainment, sports trivia, news, politics
 - Creative fiction, jokes, or non-career inquiries
@@ -64,7 +69,7 @@ def check_prompt_injection(query: str) -> Optional[GuardrailResult]:
             return GuardrailResult(
                 is_allowed=False,
                 category="prompt_injection",
-                reason="Query contains instructions attempting to override system behavior. Only career and mentorship questions are permitted."
+                reason="Query contains instructions attempting to override system behavior. " + FRIENDLY_GUARDRAIL_RESPONSE
             )
     return None
 
@@ -74,7 +79,7 @@ def check_heuristic_out_of_domain(query: str) -> Optional[GuardrailResult]:
             return GuardrailResult(
                 is_allowed=False,
                 category="out_of_domain",
-                reason="GuidEd specializes exclusively in career development and mentorship. Please ask a career or mentorship question."
+                reason=FRIENDLY_GUARDRAIL_RESPONSE
             )
     return None
 
@@ -117,10 +122,9 @@ def validate_query(query: str, use_llm_fallback: bool = True) -> GuardrailResult
             return GuardrailResult(
                 is_allowed=False,
                 category="out_of_domain",
-                reason=result.reason or "GuidEd specializes exclusively in career development and mentorship. Please ask a career or mentorship question."
+                reason=result.reason or FRIENDLY_GUARDRAIL_RESPONSE
             )
         return GuardrailResult(is_allowed=True, category="career_inquiry")
     except Exception as e:
-        # Fallback to allowed on LLM error so user is not blocked
         print(f"Warning: Guardrail LLM classifier failed: {e}")
         return GuardrailResult(is_allowed=True, category="career_inquiry")

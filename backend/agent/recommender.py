@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -111,13 +112,89 @@ def get_llm():
 
 
 # ==============================================================================
+# Clarifying Follow-Up Heuristic (Phase 3 Requirement 8)
+# ==============================================================================
+
+BROAD_CAREER_TARGETS = [
+    r"\bproduct\s+management\b",
+    r"\bsoftware\s+engineering\b",
+    r"\bdata\s+science\b",
+    r"\bdata\s+analytics?\b",
+    r"\bmarketing\b",
+    r"\bventure\s+capital\b",
+    r"\bconsulting\b",
+    r"\bdesign\b"
+]
+
+SPECIFIC_QUALIFIERS = [
+    # Subdomains & sectors
+    r"\bai\b", r"\bllms?\b", r"\bsaas\b", r"\bb2b\b", r"\bb2c\b", r"\bfintech\b",
+    r"\bhealthtech\b", r"\bclimate\b", r"\bedtech\b", r"\bquick\s+commerce\b",
+    r"\be-commerce\b", r"\bgenai\b",
+    # Tools
+    r"\bjira\b", r"\btableau\b", r"\bhubspot\b", r"\bmixpanel\b", r"\bpython\b",
+    r"\bsql\b", r"\bn8n\b", r"\bzapier\b", r"\bfigma\b", r"\bexcel\b",
+    # Seniority / roles
+    r"\bsenior\b", r"\blead\b", r"\bdirector\b", r"\bvp\b", r"\bhead\b", r"\bprincipal\b",
+    # Locations
+    r"\bbengaluru\b", r"\bbangalore\b", r"\bmumbai\b", r"\bdelhi\b", r"\bsan\s+francisco\b",
+    r"\bremote\b"
+]
+
+def check_underspecified_query(question: str, constraints: Optional[Dict[str, Any]] = None) -> Optional[str]:
+    """
+    Checks if a student's request lacks important constraints.
+    If underspecified, returns a helpful, concise follow-up question.
+    """
+    if constraints and any(constraints.values()):
+        return None  # Constraints already provided explicitly
+
+    q_lower = question.lower().strip()
+    words = re.findall(r"\b\w+\b", q_lower)
+
+    # If the user provided detailed description (> 14 words), treat as sufficiently specified
+    if len(words) > 14:
+        return None
+
+    # Check if query contains any specific qualifier (subdomain, tool, seniority, location)
+    has_qualifier = any(re.search(pat, q_lower) for pat in SPECIFIC_QUALIFIERS)
+    if has_qualifier:
+        return None
+
+    # Check if query matches a broad generic target
+    for broad_pat in BROAD_CAREER_TARGETS:
+        if re.search(broad_pat, q_lower):
+            if "product" in broad_pat:
+                return (
+                    "Would you prefer a mentor with experience in AI product management, SaaS, or general consumer tech? "
+                    "Is there a specific location, company type, or tool (such as Jira or Mixpanel) you want them to specialize in?"
+                )
+            elif "software" in broad_pat:
+                return (
+                    "Would you prefer a mentor focusing on backend systems, frontend architectures, or AI/ML engineering? "
+                    "Are there specific languages or frameworks (e.g. Python, React, Cloud) you'd like them to have?"
+                )
+            elif "data" in broad_pat:
+                return (
+                    "Are you interested in machine learning engineering, business intelligence, or general data analytics? "
+                    "Are there specific tools like SQL, Tableau, or PyTorch you want help with?"
+                )
+            else:
+                return (
+                    "To help find the most relevant mentor, do you have a preference for industry sector, "
+                    "seniority level, or specific tools you want to master?"
+                )
+
+    return None
+
+
+# ==============================================================================
 # Metadata Pre-Filter Builder
 # ==============================================================================
 
 def build_chroma_where(constraints: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
     """
     Translates user constraints into a ChromaDB 'where' filter for pre-filtering.
-    Pre-filtering guarantees all retrieved candidates strictly meet the constraints.
     """
     if not constraints:
         return None
@@ -142,11 +219,11 @@ def build_chroma_where(constraints: Optional[Dict[str, Any]] = None) -> Optional
 
 
 # ==============================================================================
-# Main Recommendation Function (Two-Stage Hybrid + Pre-Filter + FlashRank)
+# Main Recommendation Function
 # ==============================================================================
 
 RECOMMENDER_PROMPT = ChatPromptTemplate.from_messages([
-    ("system", """You are GuidEd's expert mentor matching assistant.
+    ("system", """You are Mentor Connect's expert mentor matching assistant.
 Your task is to analyze candidate mentor profiles retrieved from the dataset and recommend top mentors who genuinely match the student's question.
 
 CRITICAL RULES:
@@ -155,10 +232,10 @@ CRITICAL RULES:
 3. RECOMMEND 2 TO 3 DISTINCT MENTORS:
    - When matching candidates exist in the list, ALWAYS provide 2 to 3 distinct structured mentor recommendations (ranked from strongest to best alternative) so the student has viable choices.
    - Do NOT return just 1 mentor if there are multiple relevant candidates available in the provided list.
-4. HONEST NO-MATCH: If none of the candidate profiles match the student's question (e.g. asking for unrelated fields where candidates have zero overlap), return `hasMatches = False`, an empty `recommendations` list, and an honest explanation in `summary`.
+4. HONEST NO-MATCH: If none of the candidate profiles match the student's question, return `hasMatches = False`, an empty `recommendations` list, and an honest explanation in `summary`.
 5. EVIDENCE & LIMITATIONS:
    - For every match, cite specific evidence in `relevantExperience` (e.g., domain, rolesOfExpertise, sectorsOfExpertise, AI tools).
-   - In `limitations`, note missing or unconfirmed details (e.g., 'Seniority is unconfirmed in profile', 'Specific proprietary tools unlisted', or data quality notes).
+   - In `limitations`, note missing or unconfirmed details honestly (e.g., 'Seniority is unconfirmed in profile', 'Specific proprietary tools unlisted', or data quality notes).
 """),
     ("human", """Student Question:
 {question}
@@ -178,18 +255,28 @@ def recommend(
 ) -> Dict[str, Any]:
     """
     Two-Stage Hybrid Recommendation Pipeline:
-    1. Pre-filter ChromaDB via 'where' clause on categorical metadata (city, seniority, etc.).
-    2. Dense Semantic Search over flattened profiles, over-fetching (fetch_k=25).
-    3. FlashRank Cross-Encoder reranks the 25 pre-filtered candidates to pick the top K.
-    4. Send top candidates + question to LLM for grounded explanation.
-    5. Validate mentor IDs and return structured response.
+    1. Check if request is underspecified; if so, ask targeted follow-up.
+    2. Dense Vector Search + ChromaDB metadata pre-filter.
+    3. FlashRank Cross-Encoder reranks the pre-filtered candidates.
+    4. Deterministic 100-Point Rubric scoring.
+    5. Filter out any candidate with match score < 50%.
+    6. LLM provides grounded explanations and evidence.
     """
-    vector_store = get_vector_store()
+    # Step 0: Check for underspecified query
+    follow_up_prompt = check_underspecified_query(question, constraints)
+    if follow_up_prompt:
+        return {
+            "question": question,
+            "hasMatches": False,
+            "summary": follow_up_prompt,
+            "recommendations": [],
+            "candidatesConsidered": 0,
+            "isFollowUp": True
+        }
 
-    # Step 1: Build ChromaDB metadata pre-filter
+    vector_store = get_vector_store()
     where_filter = build_chroma_where(constraints)
 
-    # Step 2: Over-fetch candidates with Dense Vector Search + Metadata Pre-Filter
     try:
         raw_results = vector_store.similarity_search_with_score(
             question,
@@ -204,12 +291,12 @@ def recommend(
         return {
             "question": question,
             "hasMatches": False,
-            "summary": "No mentors matched the specified constraints in the database.",
+            "summary": "No mentors matched the specified criteria in the database.",
             "recommendations": [],
-            "candidatesConsidered": 0
+            "candidatesConsidered": 0,
+            "isFollowUp": False
         }
 
-    # Extract profiles and prepare passages for reranking
     candidates_by_id = {}
     passages = []
 
@@ -236,7 +323,7 @@ def recommend(
                 "text": doc.page_content
             })
 
-    # Step 3: FlashRank Reranker (Score all candidate passages)
+    # FlashRank Reranker
     rerank_request = RerankRequest(query=question, passages=passages)
     reranked = ranker.rerank(rerank_request)
 
@@ -247,26 +334,37 @@ def recommend(
         profile["_rerank_score"] = round(item["score"], 4)
         candidate_list.append(profile)
 
-    # Step 4: Explainable Weighted Ranking (Semantic + Domain/Sector + Role/Tool + Seniority/Quality)
-    top_candidates = rank_candidates(question, candidate_list, top_k=top_k)
+    # Deterministic 100-Point Ranking
+    all_scored = rank_candidates(question, candidate_list, top_k=len(candidate_list))
 
-    for c in top_candidates:
+    # Update candidate lookup with computed scores
+    for c in all_scored:
         c_id = c["mentorId"]
         if c_id in candidates_by_id:
             candidates_by_id[c_id]["_composite_score"] = c.get("_composite_score")
             candidates_by_id[c_id]["_score_breakdown"] = c.get("_score_breakdown")
+            candidates_by_id[c_id]["_match_percentage"] = c.get("_match_percentage")
             candidates_by_id[c_id]["_rerank_score"] = c.get("_rerank_score")
 
-    if not top_candidates:
+    # RULE 7: STRICTLY Filter out candidates with score < 50%
+    qualifying_candidates = [
+        c for c in all_scored
+        if (c.get("_match_percentage") or int(round(c.get("_composite_score", 0) * 100))) >= 50
+    ]
+
+    if not qualifying_candidates:
         return {
             "question": question,
             "hasMatches": False,
-            "summary": "No mentors matched the inquiry after ranking.",
+            "summary": "We couldn't find a mentor meeting our 50% relevance threshold for your specific request. Try broadening your criteria, mentioning related industries, or asking about specific skills or tools.",
             "recommendations": [],
-            "candidatesConsidered": len(passages)
+            "candidatesConsidered": len(passages),
+            "isFollowUp": False
         }
 
-    # Step 5: Send top candidates + question to LLM
+    top_candidates = qualifying_candidates[:top_k]
+
+    # Send top qualifying candidates to LLM for grounded explanation
     llm = get_llm()
     structured_llm = llm.with_structured_output(RecommendationOutput)
 
@@ -295,8 +393,8 @@ def recommend(
         "candidates_json": json.dumps(candidates_prompt_data, indent=2, ensure_ascii=False)
     })
 
-    # Step 6: Validate mentor IDs and attach explainable ranking scores
-    eligible_ids = set(candidates_by_id.keys())
+    # Validate mentor IDs and ensure computed scores are preserved
+    eligible_ids = {c["mentorId"] for c in top_candidates}
     validated_recommendations = []
 
     for rec in llm_output.recommendations:
@@ -304,31 +402,38 @@ def recommend(
         if rec_id in eligible_ids:
             actual_profile = candidates_by_id[rec_id]
             verified_name = actual_profile.get("name", rec.name)
-            comp_score = actual_profile.get("_composite_score") or actual_profile.get("_rerank_score") or 0.85
-            match_pct = int(round(float(comp_score) * 100))
-            match_pct = max(68, min(98, match_pct))
+            match_pct = actual_profile.get("_match_percentage")
+            if match_pct is None:
+                comp_score = actual_profile.get("_composite_score") or 0.5
+                match_pct = int(round(float(comp_score) * 100))
 
-            validated_recommendations.append({
-                "mentorId": rec_id,
-                "name": verified_name,
-                "company": actual_profile.get("company") or "Technology & Innovation",
-                "seniority": actual_profile.get("seniority") or "Experienced Mentor",
-                "domain": actual_profile.get("domain") or "Specialist",
-                "city": actual_profile.get("city") or "Global",
-                "sectorsOfExpertise": actual_profile.get("sectorsOfExpertise") or [],
-                "rolesOfExpertise": actual_profile.get("rolesOfExpertise") or [],
-                "matchReason": rec.matchReason,
-                "relevantExperience": rec.relevantExperience,
-                "limitations": rec.limitations,
-                "compositeScore": actual_profile.get("_composite_score"),
-                "matchPercentage": match_pct,
-                "scoreBreakdown": actual_profile.get("_score_breakdown"),
-                "distance": actual_profile.get("_retrieval_distance"),
-                "rerankScore": actual_profile.get("_rerank_score")
-            })
+            if match_pct >= 50:
+                validated_recommendations.append({
+                    "mentorId": rec_id,
+                    "name": verified_name,
+                    "company": actual_profile.get("company") or "Technology & Innovation",
+                    "seniority": actual_profile.get("seniority") or "Experienced Mentor",
+                    "domain": actual_profile.get("domain") or "Specialist",
+                    "city": actual_profile.get("city") or "Global",
+                    "sectorsOfExpertise": actual_profile.get("sectorsOfExpertise") or [],
+                    "rolesOfExpertise": actual_profile.get("rolesOfExpertise") or [],
+                    "matchReason": rec.matchReason,
+                    "relevantExperience": rec.relevantExperience,
+                    "limitations": rec.limitations,
+                    "compositeScore": actual_profile.get("_composite_score"),
+                    "matchPercentage": match_pct,
+                    "scoreBreakdown": actual_profile.get("_score_breakdown"),
+                    "distance": actual_profile.get("_retrieval_distance"),
+                    "rerankScore": actual_profile.get("_rerank_score"),
+                    "aiProfile": actual_profile.get("aiProfile"),
+                    "toolExperience": actual_profile.get("toolExperience"),
+                    "mentorshipQuality": actual_profile.get("mentorshipQuality"),
+                    "activities": actual_profile.get("activities") or [],
+                    "dataQualityIssues": actual_profile.get("dataQualityIssues") or []
+                })
 
-    # Ensure student gets 2 to 3 choices if multiple relevant candidates exist
-    if llm_output.hasMatches and len(validated_recommendations) < min(3, len(top_candidates)):
+    # If LLM returned fewer than 2 distinct mentors but other qualifying candidates exist, backfill
+    if len(validated_recommendations) < min(3, len(top_candidates)):
         already_selected_ids = {r["mentorId"] for r in validated_recommendations}
         for cand in top_candidates:
             if len(validated_recommendations) >= 3:
@@ -336,17 +441,15 @@ def recommend(
             cand_id = cand.get("mentorId")
             if cand_id and cand_id not in already_selected_ids:
                 cand_profile = candidates_by_id.get(cand_id, cand)
-                cand_score = cand_profile.get("_composite_score") or cand_profile.get("_rerank_score") or 0.80
-                if cand_score >= 0.25:
-                    c_pct = int(round(float(cand_score) * 100))
-                    c_pct = max(65, min(95, c_pct))
+                c_pct = cand_profile.get("_match_percentage")
+                if c_pct is None:
+                    c_pct = int(round(float(cand_profile.get("_composite_score", 0.5)) * 100))
+
+                if c_pct >= 50:
                     sectors = cand_profile.get("sectorsOfExpertise") or []
                     roles = cand_profile.get("rolesOfExpertise") or []
                     domain = cand_profile.get("domain") or "Domain Specialist"
-
                     sectors_label = ", ".join(sectors[:2]) if sectors else domain
-                    cand_reason = f"Specialist in {domain} with verified expertise in {sectors_label}."
-                    cand_evidence = f"Domain: {domain}. Specialization: {', '.join(roles[:2]) if roles else 'Advisory'}."
 
                     validated_recommendations.append({
                         "mentorId": cand_id,
@@ -357,32 +460,37 @@ def recommend(
                         "city": cand_profile.get("city") or "Global",
                         "sectorsOfExpertise": sectors,
                         "rolesOfExpertise": roles,
-                        "matchReason": cand_reason,
-                        "relevantExperience": cand_evidence,
+                        "matchReason": f"Specialist in {domain} with verified expertise in {sectors_label}.",
+                        "relevantExperience": f"Domain: {domain}. Specialization: {', '.join(roles[:2]) if roles else 'Advisory'}.",
                         "limitations": "Profile details available during consultation.",
                         "compositeScore": cand_profile.get("_composite_score"),
                         "matchPercentage": c_pct,
                         "scoreBreakdown": cand_profile.get("_score_breakdown"),
                         "distance": cand_profile.get("_retrieval_distance"),
-                        "rerankScore": cand_profile.get("_rerank_score")
+                        "rerankScore": cand_profile.get("_rerank_score"),
+                        "aiProfile": cand_profile.get("aiProfile"),
+                        "toolExperience": cand_profile.get("toolExperience"),
+                        "mentorshipQuality": cand_profile.get("mentorshipQuality"),
+                        "activities": cand_profile.get("activities") or [],
+                        "dataQualityIssues": cand_profile.get("dataQualityIssues") or []
                     })
                     already_selected_ids.add(cand_id)
 
-    has_matches = len(validated_recommendations) > 0 and llm_output.hasMatches
-    summary = llm_output.summary or "No confirmed mentor matches found in the dataset for this inquiry."
+    # Final sorting by computed matchPercentage descending
+    validated_recommendations.sort(key=lambda x: x["matchPercentage"], reverse=True)
+
+    has_matches = len(validated_recommendations) > 0
+    summary = llm_output.summary if has_matches else "No mentors met the 50% relevance threshold for this inquiry."
 
     return {
         "question": question,
         "hasMatches": has_matches,
         "summary": summary,
         "recommendations": validated_recommendations,
-        "candidatesConsidered": len(passages)
+        "candidatesConsidered": len(passages),
+        "isFollowUp": False
     }
 
-
-# ==============================================================================
-# Local CLI Test Runner
-# ==============================================================================
 
 if __name__ == "__main__":
     test_query = (
@@ -401,7 +509,8 @@ if __name__ == "__main__":
     print(f"Summary: {result['summary']}\n")
     print(f"Recommendations ({len(result['recommendations'])}):")
     for r in result["recommendations"]:
-        print(f"\n- [{r['mentorId']}] {r['name']} (Distance: {r['distance']}, Rerank: {r.get('rerankScore')})")
+        print(f"\n- [{r['mentorId']}] {r['name']} ({r['matchPercentage']}% Match)")
         print(f"  Reason: {r['matchReason']}")
         print(f"  Evidence: {r['relevantExperience']}")
         print(f"  Limitations: {r['limitations']}")
+        print(f"  Score Breakdown: {r.get('scoreBreakdown')}")

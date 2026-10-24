@@ -1,5 +1,7 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, HTTPException, status
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
@@ -25,11 +27,36 @@ async def lifespan(app: FastAPI):
     await close_mongo_connection()
 
 app = FastAPI(
-    title="GuidEd API",
-    description="FastAPI Backend for GuidEd Mentorship & AI Agent Platform",
+    title="Mentor Connect API",
+    description="FastAPI Backend for Mentor Connect Career Mentorship Platform",
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Exception handlers preventing any sensitive traceback/prompt leaks
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    errors = []
+    for err in exc.errors():
+        loc = " -> ".join(str(l) for l in err.get("loc", []))
+        errors.append(f"{loc}: {err.get('msg')}")
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={"detail": "; ".join(errors) if errors else "Request validation failed"}
+    )
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    if isinstance(exc, HTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail}
+        )
+    print(f"Unhandled server exception on {request.method} {request.url.path}: {exc}")
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "An unexpected error occurred. Please try again later."}
+    )
 
 # Security and rate limiting middlewares
 app.add_middleware(SecurityHeadersMiddleware)
@@ -57,7 +84,7 @@ app.include_router(admin_router, prefix="/api")
 @app.get("/")
 async def root():
     return {
-        "message": "Welcome to GuidEd API",
+        "message": "Welcome to Mentor Connect API",
         "docs": "/docs",
         "status": "healthy"
     }

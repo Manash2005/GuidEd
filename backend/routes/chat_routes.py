@@ -9,11 +9,13 @@ from models.chat_model import (
     ChatMessage,
     CreateConversationRequest,
     SendMessageRequest,
+    UpdateTitleRequest,
     ConversationSummaryResponse,
     ConversationDetailResponse
 )
 from utils.auth import get_current_user
-from agent.guardrails import validate_query
+from utils.title_generator import generate_conversation_title
+from agent.guardrails import validate_query, FRIENDLY_GUARDRAIL_RESPONSE
 from agent.recommender import recommend
 
 router = APIRouter(prefix="/chat", tags=["Chat Conversations"])
@@ -32,10 +34,18 @@ async def create_conversation(
 
     conversation_id = f"conv_{uuid.uuid4().hex[:12]}"
     now = _now()
-    title = payload.title or (payload.initialMessage[:40] if payload.initialMessage else "New Career Conversation")
+
+    # Generate 3-6 word meaningful title if initial query provided, else fallback
+    if payload.title and payload.title.strip():
+        title = payload.title.strip()[:60]
+    elif payload.initialMessage and payload.initialMessage.strip():
+        title = generate_conversation_title(payload.initialMessage)
+    else:
+        title = "New Career Conversation"
+
     messages = []
 
-    if payload.initialMessage:
+    if payload.initialMessage and payload.initialMessage.strip():
         user_msg = ChatMessage(
             messageId=f"msg_{uuid.uuid4().hex[:10]}",
             role="user",
@@ -45,24 +55,35 @@ async def create_conversation(
         )
         messages.append(user_msg)
 
+        # Check guardrails
         guard = validate_query(payload.initialMessage)
         if not guard.is_allowed:
             asst_msg = ChatMessage(
                 messageId=f"msg_{uuid.uuid4().hex[:10]}",
                 role="assistant",
-                content=guard.reason or "GuidEd only supports career and mentorship inquiries.",
+                content=guard.reason or FRIENDLY_GUARDRAIL_RESPONSE,
                 recommendations=[],
                 createdAt=_now()
             )
         else:
-            rec = recommend(payload.initialMessage)
-            asst_msg = ChatMessage(
-                messageId=f"msg_{uuid.uuid4().hex[:10]}",
-                role="assistant",
-                content=rec["summary"],
-                recommendations=rec["recommendations"],
-                createdAt=_now()
-            )
+            try:
+                rec = recommend(payload.initialMessage)
+                asst_msg = ChatMessage(
+                    messageId=f"msg_{uuid.uuid4().hex[:10]}",
+                    role="assistant",
+                    content=rec["summary"],
+                    recommendations=rec.get("recommendations", []),
+                    createdAt=_now()
+                )
+            except Exception as e:
+                print(f"Warning: Recommend failed during create_conversation: {e}")
+                asst_msg = ChatMessage(
+                    messageId=f"msg_{uuid.uuid4().hex[:10]}",
+                    role="assistant",
+                    content="I'm here to assist with your career path and finding the right mentors. Could you tell me a little more about your target role or questions?",
+                    recommendations=[],
+                    createdAt=_now()
+                )
         messages.append(asst_msg)
 
     doc = {
@@ -134,6 +155,42 @@ async def get_conversation(
         updatedAt=conv["updatedAt"]
     )
 
+@router.patch("/conversations/{conversation_id}/title", response_model=ConversationDetailResponse)
+async def update_conversation_title(
+    conversation_id: str,
+    payload: UpdateTitleRequest,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    db = get_database()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database connection unavailable")
+
+    conv = await db["conversations"].find_one({"conversationId": conversation_id})
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    if conv.get("userId") != current_user.userId:
+        raise HTTPException(status_code=403, detail="Access denied to this conversation")
+
+    new_title = payload.title.strip()[:60]
+    now = _now()
+    await db["conversations"].update_one(
+        {"conversationId": conversation_id},
+        {"$set": {"title": new_title, "updatedAt": now}}
+    )
+
+    conv["title"] = new_title
+    conv["updatedAt"] = now
+
+    return ConversationDetailResponse(
+        conversationId=conv["conversationId"],
+        userId=conv["userId"],
+        title=new_title,
+        messages=[ChatMessage(**m) for m in conv.get("messages", [])],
+        createdAt=conv["createdAt"],
+        updatedAt=now
+    )
+
 @router.post("/conversations/{conversation_id}/messages", response_model=ChatMessage)
 async def send_message(
     conversation_id: str,
@@ -160,24 +217,41 @@ async def send_message(
         createdAt=now
     )
 
+    # Check guardrails
     guard = validate_query(payload.message)
     if not guard.is_allowed:
         asst_msg = ChatMessage(
             messageId=f"msg_{uuid.uuid4().hex[:10]}",
             role="assistant",
-            content=guard.reason or "GuidEd only supports career and mentorship inquiries.",
+            content=guard.reason or FRIENDLY_GUARDRAIL_RESPONSE,
             recommendations=[],
             createdAt=_now()
         )
     else:
-        rec = recommend(payload.message, constraints=payload.constraints)
-        asst_msg = ChatMessage(
-            messageId=f"msg_{uuid.uuid4().hex[:10]}",
-            role="assistant",
-            content=rec["summary"],
-            recommendations=rec["recommendations"],
-            createdAt=_now()
-        )
+        try:
+            rec = recommend(payload.message, constraints=payload.constraints)
+            asst_msg = ChatMessage(
+                messageId=f"msg_{uuid.uuid4().hex[:10]}",
+                role="assistant",
+                content=rec["summary"],
+                recommendations=rec.get("recommendations", []),
+                createdAt=_now()
+            )
+        except Exception as e:
+            print(f"Warning: Recommender failed during send_message: {e}")
+            asst_msg = ChatMessage(
+                messageId=f"msg_{uuid.uuid4().hex[:10]}",
+                role="assistant",
+                content="I encountered an unexpected issue retrieving mentors for that query. Could you try rephrasing or mentioning specific skills you'd like to explore?",
+                recommendations=[],
+                createdAt=_now()
+            )
+
+    # Update conversation messages and title if it was default
+    update_fields = {"updatedAt": _now()}
+    existing_title = conv.get("title", "")
+    if existing_title in {"New Career Conversation", "Career Conversation", "New Chat", ""}:
+        update_fields["title"] = generate_conversation_title(payload.message)
 
     await db["conversations"].update_one(
         {"conversationId": conversation_id},
@@ -190,7 +264,7 @@ async def send_message(
                     ]
                 }
             },
-            "$set": {"updatedAt": _now()}
+            "$set": update_fields
         }
     )
 

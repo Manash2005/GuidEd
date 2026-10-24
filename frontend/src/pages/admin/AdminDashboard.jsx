@@ -10,7 +10,12 @@ import {
   Search,
   Check,
   Video,
-  ExternalLink
+  ExternalLink,
+  TrendingUp,
+  BarChart3,
+  Layers,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -117,6 +122,7 @@ export default function AdminDashboard() {
 
   const handleRoleChange = async (userId, newRole) => {
     setIsUpdatingUser(true);
+    setFeedbackMsg('');
     try {
       await adminApi.updateUserRole(userId, newRole);
       setFeedbackMsg(`User role updated to ${newRole}`);
@@ -132,6 +138,7 @@ export default function AdminDashboard() {
 
   const handleStatusChange = async (userId, newStatus) => {
     setIsUpdatingUser(true);
+    setFeedbackMsg('');
     try {
       await adminApi.updateUserStatus(userId, newStatus);
       setFeedbackMsg(`User status updated to ${newStatus}`);
@@ -145,17 +152,50 @@ export default function AdminDashboard() {
     }
   };
 
-  // Admin Call Stage Tracking (upcoming, pending, completed, cancelled)
-  const handleBookingStageChange = async (bookingId, stage) => {
+  const handleBookingStageChange = async (bookingId, newStatus) => {
     setUpdatingBookingId(bookingId);
+    setFeedbackMsg('');
     try {
-      await adminApi.updateBookingStatus(bookingId, stage);
-      setFeedbackMsg(`Meeting stage updated to ${stage}`);
+      await adminApi.updateBookingStatus(bookingId, newStatus);
+      setFeedbackMsg(`Booking status updated to ${newStatus}`);
       setTimeout(() => setFeedbackMsg(''), 3000);
       loadBookings();
       loadAll();
     } catch (err) {
-      alert(err.message || 'Failed to update meeting stage');
+      alert(err.message || 'Failed to update booking status');
+    } finally {
+      setUpdatingBookingId(null);
+    }
+  };
+
+  const handleApproveBooking = async (bookingId) => {
+    setUpdatingBookingId(bookingId);
+    setFeedbackMsg('');
+    try {
+      await adminApi.approveBooking(bookingId);
+      setFeedbackMsg(`Booking ${bookingId} approved successfully! Confirmation email dispatched.`);
+      setTimeout(() => setFeedbackMsg(''), 4000);
+      loadBookings();
+      loadAll();
+    } catch (err) {
+      alert(err.message || 'Failed to approve booking');
+    } finally {
+      setUpdatingBookingId(null);
+    }
+  };
+
+  const handleRejectBooking = async (bookingId) => {
+    if (!window.confirm('Are you sure you want to reject and cancel this booking request?')) return;
+    setUpdatingBookingId(bookingId);
+    setFeedbackMsg('');
+    try {
+      await adminApi.rejectBooking(bookingId);
+      setFeedbackMsg(`Booking ${bookingId} has been rejected/cancelled.`);
+      setTimeout(() => setFeedbackMsg(''), 4000);
+      loadBookings();
+      loadAll();
+    } catch (err) {
+      alert(err.message || 'Failed to reject booking');
     } finally {
       setUpdatingBookingId(null);
     }
@@ -163,408 +203,227 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6 font-sans">
-      {/* Clean Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#557945]/20">
-        <h1 className="text-2xl font-extrabold text-[#F1F6F2] tracking-tight">Admin Console</h1>
+      {/* Top Header & Workspace Title */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E4E7EC]">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-[#202124] tracking-tight">Administrative Operations</h1>
+            <span className="text-xs bg-[#EFF4FA] text-[#315E9E] border border-[#D0DCEB] px-2.5 py-0.5 rounded-full font-bold">
+              Admin Workspace
+            </span>
+          </div>
+          <p className="text-xs text-[#667085] mt-0.5">
+            Verified database metrics, user management, and mentorship meeting oversight
+          </p>
+        </div>
 
         {healthData && (
-          <div className="flex items-center gap-2 text-xs bg-[#142017] px-3 py-1 rounded-xl border border-[#557945]/30">
-            <span className="w-2 h-2 rounded-full bg-[#5D9253]" />
-            <span className="text-[#84CC78] font-semibold">Database Connected</span>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-[#E4E7EC] rounded-lg text-xs font-mono shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-[#12B76A]" />
+            <span className="text-[#344054] font-semibold">System: {healthData.status}</span>
           </div>
         )}
       </div>
 
       {feedbackMsg && (
-        <div className="p-3 bg-[#5D9253]/15 border border-[#5D9253]/35 text-[#84CC78] text-xs rounded-xl font-medium flex items-center gap-2">
-          <Check className="w-4 h-4 text-[#5D9253]" />
+        <div className="p-3 bg-emerald-50 border border-emerald-200 text-[#027A48] text-xs rounded-lg font-medium flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-[#12B76A]" />
           <span>{feedbackMsg}</span>
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-[#557945]/20 pb-2">
-        <button
-          onClick={() => setSearchParams({ tab: 'stats' })}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
-            activeTab === 'stats'
-              ? 'bg-[#557945]/30 text-[#FFCB3D] border border-[#557945]/40 shadow-sm'
-              : 'text-[#A2B5A6] hover:text-[#F1F6F2] hover:bg-[#152318]'
-          }`}
-        >
-          <Activity className="w-3.5 h-3.5 text-[#FFCB3D]" />
-          <span>KPIs</span>
-        </button>
-
-        <button
-          onClick={() => setSearchParams({ tab: 'users' })}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
-            activeTab === 'users'
-              ? 'bg-[#557945]/30 text-[#FFCB3D] border border-[#557945]/40 shadow-sm'
-              : 'text-[#A2B5A6] hover:text-[#F1F6F2] hover:bg-[#152318]'
-          }`}
-        >
-          <Users className="w-3.5 h-3.5 text-[#5D9253]" />
-          <span>Users ({usersTotal || statsData?.totalUsers || 0})</span>
-        </button>
-
-        <button
-          onClick={() => setSearchParams({ tab: 'bookings' })}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
-            activeTab === 'bookings'
-              ? 'bg-[#557945]/30 text-[#FFCB3D] border border-[#557945]/40 shadow-sm'
-              : 'text-[#A2B5A6] hover:text-[#F1F6F2] hover:bg-[#152318]'
-          }`}
-        >
-          <Calendar className="w-3.5 h-3.5 text-[#F1A344]" />
-          <span>Bookings &amp; Calls ({bookingsTotal || statsData?.totalBookings || 0})</span>
-        </button>
-
-        <button
-          onClick={() => setSearchParams({ tab: 'audit' })}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
-            activeTab === 'audit'
-              ? 'bg-[#557945]/30 text-[#FFCB3D] border border-[#557945]/40 shadow-sm'
-              : 'text-[#A2B5A6] hover:text-[#F1F6F2] hover:bg-[#152318]'
-          }`}
-        >
-          <FileText className="w-3.5 h-3.5 text-[#84CC78]" />
-          <span>Audit ({auditTotal})</span>
-        </button>
+      {/* Navigation Tabs */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-[#E4E7EC] pb-2">
+        {[
+          { id: 'stats', label: 'Platform KPIs & Trends', icon: Activity },
+          { id: 'users', label: `Users & Mentors (${usersTotal})`, icon: Users },
+          { id: 'bookings', label: `Bookings & Oversight (${bookingsTotal})`, icon: Calendar },
+          { id: 'audit', label: 'Audit Trail', icon: FileText }
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setSearchParams(tab.id === 'stats' ? {} : { tab: tab.id })}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition cursor-pointer ${
+                isActive
+                  ? 'bg-[#315E9E] text-white shadow-xs'
+                  : 'text-[#667085] hover:text-[#202124] hover:bg-[#F8F9FA]'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Tab 1: System KPIs & Chart-Oriented Analytics (100% Real Database Data) */}
+      {/* ========================================================================= */}
+      {/* TAB 1: VERIFIED MONGODB KPIS & ACTIVITY METRICS */}
+      {/* ========================================================================= */}
       {activeTab === 'stats' && (() => {
-        const totalMentors = statsData?.totalMentors ?? statsData?.stats?.totalMentors ?? 0;
-        const totalStudents = statsData?.totalStudents ?? statsData?.stats?.totalStudents ?? 0;
-        const totalAdmins = statsData?.totalAdmins ?? statsData?.stats?.totalAdmins ?? 1;
-        const totalUsers = statsData?.totalUsers ?? statsData?.stats?.totalUsers ?? (totalMentors + totalStudents + totalAdmins);
-        const totalBookings = statsData?.totalBookings ?? statsData?.stats?.totalBookings ?? 0;
-        const upcomingBookings = statsData?.confirmedBookings ?? statsData?.stats?.upcomingBookings ?? 0;
-        const completedBookings = statsData?.stats?.completedBookings ?? 0;
-        const cancelledBookings = statsData?.stats?.cancelledBookings ?? 0;
-        const totalConversations = statsData?.stats?.totalConversations ?? 0;
-        const totalMessages = statsData?.stats?.totalMessages ?? 0;
-        const activeUsers = statsData?.activeUsers ?? ((statsData?.stats?.activeStudents || 0) + totalAdmins);
+        const totalStudents = statsData?.totalStudents ?? 0;
+        const totalMentors = statsData?.totalMentors ?? 0;
+        const totalBookings = statsData?.totalBookings ?? 0;
+        const upcomingBookings = statsData?.upcomingBookings ?? statsData?.stats?.upcomingBookings ?? 0;
+        const pendingBookings = statsData?.pendingBookings ?? statsData?.stats?.pendingBookings ?? 0;
+        const completedBookings = statsData?.completedBookings ?? statsData?.stats?.completedBookings ?? 0;
+        const cancelledBookings = statsData?.cancelledBookings ?? statsData?.stats?.cancelledBookings ?? 0;
+        const totalConversations = statsData?.totalConversations ?? 0;
+        const totalMessages = statsData?.totalMessages ?? 0;
+        const activeStudents = statsData?.activeStudents ?? 0;
         const popularDomains = statsData?.popularDomains || [];
         const topMentors = statsData?.topMentors || [];
         const bookingTrends = statsData?.bookingTrends || [];
 
-        // Donut Chart calculations (Circle radius = 40, circumference = 2 * PI * 40 = 251.327)
-        const totalRoleCount = Math.max(1, totalMentors + totalStudents + totalAdmins);
-        const mentorPct = (totalMentors / totalRoleCount) * 100;
-        const studentPct = (totalStudents / totalRoleCount) * 100;
-        const adminPct = (totalAdmins / totalRoleCount) * 100;
-
-        const C = 2 * Math.PI * 40;
-        const mentorStroke = (mentorPct / 100) * C;
-        const studentStroke = (studentPct / 100) * C;
-        const adminStroke = (adminPct / 100) * C;
-
-        const mentorOffset = 0;
-        const studentOffset = -mentorStroke;
-        const adminOffset = -(mentorStroke + studentStroke);
-
-        const maxDomainCount = popularDomains.length > 0
-          ? Math.max(...popularDomains.map((d) => d.count || 1))
-          : 1;
+        const maxDomainCount = Math.max(1, ...popularDomains.map((d) => d.count));
+        const maxTrendCount = Math.max(1, ...bookingTrends.map((t) => t.count));
 
         return (
           <div className="space-y-6">
-            {/* Top KPI Metric Cards */}
+            {/* Top Stat Cards (4 columns) */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="glass-card p-5 rounded-2xl border border-[#557945]/30">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] text-[#8BA190] font-semibold uppercase tracking-wider">
-                    Total Users
-                  </span>
-                  <span className="w-2 h-2 rounded-full bg-[#5D9253]" />
-                </div>
-                <div className="text-3xl font-extrabold text-[#F1F6F2] tracking-tight">{totalUsers}</div>
-                <div className="mt-2 text-xs text-[#84CC78] font-medium flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#84CC78] animate-pulse" />
-                  {activeUsers} Active Accounts
-                </div>
+              <div className="bg-white rounded-xl p-5 border border-[#E4E7EC] shadow-xs">
+                <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider block">
+                  Students Registered
+                </span>
+                <div className="text-2xl font-bold text-[#202124] mt-1">{totalStudents}</div>
+                <span className="text-[11px] text-[#12B76A] font-medium block mt-1">
+                  Active (last 30d): {activeStudents}
+                </span>
               </div>
 
-              <div className="glass-card p-5 rounded-2xl border border-[#557945]/30">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] text-[#8BA190] font-semibold uppercase tracking-wider">
-                    Mentors
-                  </span>
-                  <span className="text-[10px] font-mono text-[#84CC78] bg-[#142017] px-2 py-0.5 rounded border border-[#557945]/30">
-                    Catalog
-                  </span>
-                </div>
-                <div className="text-3xl font-extrabold text-[#84CC78] tracking-tight">{totalMentors}</div>
-                <div className="mt-2 text-xs text-[#A2B5A6]">Verified Industry Leaders</div>
+              <div className="bg-white rounded-xl p-5 border border-[#E4E7EC] shadow-xs">
+                <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider block">
+                  Mentors Catalog
+                </span>
+                <div className="text-2xl font-bold text-[#315E9E] mt-1">{totalMentors}</div>
+                <span className="text-[11px] text-[#667085] font-medium block mt-1">
+                  ChromaDB vector indexed
+                </span>
               </div>
 
-              <div className="glass-card p-5 rounded-2xl border border-[#557945]/30">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] text-[#8BA190] font-semibold uppercase tracking-wider">
-                    Students
-                  </span>
-                  <span className="text-[10px] font-mono text-[#FFCB3D] bg-[#142017] px-2 py-0.5 rounded border border-[#557945]/30">
-                    Learners
-                  </span>
-                </div>
-                <div className="text-3xl font-extrabold text-[#FFCB3D] tracking-tight">{totalStudents}</div>
-                <div className="mt-2 text-xs text-[#A2B5A6]">Seeking Career Mentorship</div>
+              <div className="bg-white rounded-xl p-5 border border-[#E4E7EC] shadow-xs">
+                <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider block">
+                  Total Bookings
+                </span>
+                <div className="text-2xl font-bold text-[#202124] mt-1">{totalBookings}</div>
+                <span className="text-[11px] text-[#667085] font-medium block mt-1">
+                  Upcoming: {upcomingBookings} &bull; <span className={pendingBookings > 0 ? "text-[#B54708] font-bold" : ""}>Pending: {pendingBookings}</span> &bull; Completed: {completedBookings}
+                </span>
               </div>
 
-              <div className="glass-card p-5 rounded-2xl border border-[#557945]/30">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] text-[#8BA190] font-semibold uppercase tracking-wider">
-                    1:1 Sessions
-                  </span>
-                  <span className="text-[10px] font-mono text-[#F1A344] bg-[#142017] px-2 py-0.5 rounded border border-[#557945]/30">
-                    Calendar
-                  </span>
-                </div>
-                <div className="text-3xl font-extrabold text-[#F1A344] tracking-tight">{totalBookings}</div>
-                <div className="mt-2 text-xs text-[#A2B5A6]">
-                  {upcomingBookings} Upcoming • {completedBookings} Completed
-                </div>
+              <div className="bg-white rounded-xl p-5 border border-[#E4E7EC] shadow-xs">
+                <span className="text-xs font-semibold text-[#667085] uppercase tracking-wider block">
+                  Career Inquiries
+                </span>
+                <div className="text-2xl font-bold text-[#315E9E] mt-1">{totalConversations}</div>
+                <span className="text-[11px] text-[#667085] font-medium block mt-1">
+                  Total Messages: {totalMessages}
+                </span>
               </div>
             </div>
 
-            {/* Charts Grid */}
+            {/* Row 1: Popular Domains & Booking Trends */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Chart 1: Role Distribution Donut Chart */}
-              <div className="glass-panel rounded-3xl p-6 border border-[#557945]/30 shadow-xl space-y-5">
-                <div className="flex items-center justify-between border-b border-[#557945]/20 pb-3">
+              {/* Popular Domains Breakdown */}
+              <div className="bg-white rounded-xl p-6 border border-[#E4E7EC] shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-[#E4E7EC] pb-3">
                   <div>
-                    <h3 className="text-sm font-bold text-[#F1F6F2] tracking-tight">User Role Distribution</h3>
-                    <p className="text-[11px] text-[#8BA190]">Live breakdown of accounts registered in database</p>
+                    <h3 className="text-sm font-bold text-[#202124]">Popular Career Domains</h3>
+                    <p className="text-xs text-[#667085]">Specializations in student and mentor profiles</p>
                   </div>
-                  <span className="text-[11px] font-mono font-bold text-[#FFCB3D] bg-[#0E1610] px-2.5 py-1 rounded-lg border border-[#557945]/30">
-                    {totalUsers} Total
-                  </span>
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-center justify-around gap-6 pt-2">
-                  {/* SVG Donut */}
-                  <div className="relative w-44 h-44 flex items-center justify-center">
-                    <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                      {/* Background Circle */}
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        fill="transparent"
-                        stroke="#142017"
-                        strokeWidth="12"
-                      />
-                      {/* Mentors Segment */}
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        fill="transparent"
-                        stroke="#5D9253"
-                        strokeWidth="12"
-                        strokeDasharray={`${mentorStroke} ${C - mentorStroke}`}
-                        strokeDashoffset={mentorOffset}
-                        strokeLinecap="round"
-                        className="transition-all duration-700"
-                      />
-                      {/* Students Segment */}
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        fill="transparent"
-                        stroke="#FFCB3D"
-                        strokeWidth="12"
-                        strokeDasharray={`${studentStroke} ${C - studentStroke}`}
-                        strokeDashoffset={studentOffset}
-                        strokeLinecap="round"
-                        className="transition-all duration-700"
-                      />
-                      {/* Admin Segment */}
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        fill="transparent"
-                        stroke="#F1A344"
-                        strokeWidth="12"
-                        strokeDasharray={`${adminStroke} ${C - adminStroke}`}
-                        strokeDashoffset={adminOffset}
-                        strokeLinecap="round"
-                        className="transition-all duration-700"
-                      />
-                    </svg>
-                    {/* Centered Total */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                      <span className="text-2xl font-black text-[#F1F6F2] leading-none">{totalUsers}</span>
-                      <span className="text-[10px] text-[#8BA190] uppercase font-bold tracking-wider mt-1">Users</span>
-                    </div>
-                  </div>
-
-                  {/* Donut Legend */}
-                  <div className="space-y-3 w-full sm:w-auto">
-                    <div className="flex items-center justify-between sm:justify-start gap-4 p-2 rounded-xl bg-[#0E1610]/70 border border-[#557945]/20">
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-[#5D9253]" />
-                        <span className="text-xs font-semibold text-[#D0DDD2]">Mentors</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-xs font-mono font-bold text-[#84CC78]">{totalMentors}</span>
-                        <span className="text-[10px] text-[#8BA190] ml-1.5">({mentorPct.toFixed(1)}%)</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between sm:justify-start gap-4 p-2 rounded-xl bg-[#0E1610]/70 border border-[#557945]/20">
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-[#FFCB3D]" />
-                        <span className="text-xs font-semibold text-[#D0DDD2]">Students</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-xs font-mono font-bold text-[#FFCB3D]">{totalStudents}</span>
-                        <span className="text-[10px] text-[#8BA190] ml-1.5">({studentPct.toFixed(1)}%)</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between sm:justify-start gap-4 p-2 rounded-xl bg-[#0E1610]/70 border border-[#557945]/20">
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-[#F1A344]" />
-                        <span className="text-xs font-semibold text-[#D0DDD2]">Administrators</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-xs font-mono font-bold text-[#F1A344]">{totalAdmins}</span>
-                        <span className="text-[10px] text-[#8BA190] ml-1.5">({adminPct.toFixed(1)}%)</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Chart 2: Popular Career Domains Bar Visualizer */}
-              <div className="glass-panel rounded-3xl p-6 border border-[#557945]/30 shadow-xl space-y-4">
-                <div className="flex items-center justify-between border-b border-[#557945]/20 pb-3">
-                  <div>
-                    <h3 className="text-sm font-bold text-[#F1F6F2] tracking-tight">Mentor Domain Breakdown</h3>
-                    <p className="text-[11px] text-[#8BA190]">Expertise distribution aggregated across all mentors</p>
-                  </div>
-                  <span className="text-[11px] font-mono text-[#84CC78] bg-[#0E1610] px-2.5 py-1 rounded-lg border border-[#557945]/30">
+                  <span className="text-xs font-mono text-[#315E9E] bg-[#EFF4FA] px-2.5 py-1 rounded-md font-semibold">
                     {popularDomains.length} Domains
                   </span>
                 </div>
 
                 <div className="space-y-3 pt-1">
-                  {popularDomains.map((dom, idx) => {
-                    const pct = Math.round((dom.count / maxDomainCount) * 100);
-                    return (
-                      <div key={idx} className="space-y-1.5">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-[#D0DDD2] font-medium">{dom.domain}</span>
-                          <span className="font-mono font-bold text-[#FFCB3D]">{dom.count} mentors</span>
+                  {popularDomains.length === 0 ? (
+                    <div className="text-center py-6 text-xs text-[#667085]">No domain data recorded yet.</div>
+                  ) : (
+                    popularDomains.map((dom, idx) => {
+                      const pct = Math.round((dom.count / maxDomainCount) * 100);
+                      return (
+                        <div key={idx} className="space-y-1.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-[#344054] font-medium">{dom.domain}</span>
+                            <span className="font-mono font-bold text-[#315E9E]">{dom.count} users</span>
+                          </div>
+                          <div className="w-full h-2.5 bg-[#F2F4F7] rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-[#315E9E] rounded-full transition-all duration-500"
+                              style={{ width: `${Math.max(8, pct)}%` }}
+                            />
+                          </div>
                         </div>
-                        <div className="w-full h-2.5 bg-[#0E1610] rounded-full overflow-hidden border border-[#557945]/30">
-                          <div
-                            className="h-full bg-gradient-to-r from-[#5D9253] via-[#84CC78] to-[#FFCB3D] rounded-full transition-all duration-500"
-                            style={{ width: `${Math.max(8, pct)}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  )}
                 </div>
               </div>
-            </div>
 
-            {/* Row 2: Booking Statuses & Activity Volume */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Chart 3: Session Stages & Statuses */}
-              <div className="glass-panel rounded-3xl p-6 border border-[#557945]/30 shadow-xl space-y-4">
-                <div className="flex items-center justify-between border-b border-[#557945]/20 pb-3">
+              {/* Consultation Lifecycle Stages */}
+              <div className="bg-white rounded-xl p-6 border border-[#E4E7EC] shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-[#E4E7EC] pb-3">
                   <div>
-                    <h3 className="text-sm font-bold text-[#F1F6F2] tracking-tight">Session Stages</h3>
-                    <p className="text-[11px] text-[#8BA190]">Lifecycle breakdown of consultation calls</p>
+                    <h3 className="text-sm font-bold text-[#202124]">Consultation Session Stages</h3>
+                    <p className="text-xs text-[#667085]">Lifecycle status across all mentorship bookings</p>
                   </div>
-                  <span className="text-[11px] font-mono text-[#F1A344] bg-[#0E1610] px-2.5 py-1 rounded-lg border border-[#557945]/30">
+                  <span className="text-xs font-mono text-[#315E9E] bg-[#EFF4FA] px-2.5 py-1 rounded-md font-semibold">
                     {totalBookings} Total
                   </span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3 pt-2">
-                  <div className="p-4 rounded-2xl bg-[#0E1610]/80 border border-[#557945]/25 text-center">
-                    <span className="text-[10px] text-[#8BA190] uppercase font-bold block mb-1">Upcoming</span>
-                    <span className="text-2xl font-black text-[#84CC78]">{upcomingBookings}</span>
-                    <span className="text-[10px] text-[#A2B5A6] block mt-1">Confirmed</span>
+                  <div className="p-4 rounded-xl bg-[#F8F9FA] border border-[#E4E7EC] text-center">
+                    <span className="text-[11px] text-[#667085] uppercase font-bold block mb-1">Upcoming</span>
+                    <span className="text-2xl font-bold text-[#315E9E]">{upcomingBookings}</span>
+                    <span className="text-[11px] text-[#667085] block mt-1">Confirmed</span>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-[#0E1610]/80 border border-[#557945]/25 text-center">
-                    <span className="text-[10px] text-[#8BA190] uppercase font-bold block mb-1">Completed</span>
-                    <span className="text-2xl font-black text-[#FFCB3D]">{completedBookings}</span>
-                    <span className="text-[10px] text-[#A2B5A6] block mt-1">Finished</span>
+                  <div className="p-4 rounded-xl bg-[#F8F9FA] border border-[#E4E7EC] text-center">
+                    <span className="text-[11px] text-[#667085] uppercase font-bold block mb-1">Completed</span>
+                    <span className="text-2xl font-bold text-[#12B76A]">{completedBookings}</span>
+                    <span className="text-[11px] text-[#667085] block mt-1">Finished</span>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-[#0E1610]/80 border border-[#557945]/25 text-center">
-                    <span className="text-[10px] text-[#8BA190] uppercase font-bold block mb-1">Cancelled</span>
-                    <span className="text-2xl font-black text-rose-400">{cancelledBookings}</span>
-                    <span className="text-[10px] text-[#A2B5A6] block mt-1">Canceled</span>
+                  <div className="p-4 rounded-xl bg-[#F8F9FA] border border-[#E4E7EC] text-center">
+                    <span className="text-[11px] text-[#667085] uppercase font-bold block mb-1">Cancelled</span>
+                    <span className="text-2xl font-bold text-[#D92D20]">{cancelledBookings}</span>
+                    <span className="text-[11px] text-[#667085] block mt-1">Liberated</span>
                   </div>
                 </div>
 
                 {topMentors.length > 0 && (
-                  <div className="pt-2 border-t border-[#557945]/20 flex items-center justify-between text-xs text-[#A2B5A6]">
-                    <span>Top Mentor Booked:</span>
-                    <span className="font-semibold text-[#84CC78]">{topMentors[0].name} ({topMentors[0].bookingsCount} booking)</span>
+                  <div className="pt-3 border-t border-[#E4E7EC] flex items-center justify-between text-xs text-[#667085]">
+                    <span>Most Booked Mentor:</span>
+                    <span className="font-semibold text-[#202124]">
+                      {topMentors[0].name} ({topMentors[0].bookingsCount} sessions)
+                    </span>
                   </div>
                 )}
-              </div>
-
-              {/* Chart 4: AI Inquiries & Conversations Activity */}
-              <div className="glass-panel rounded-3xl p-6 border border-[#557945]/30 shadow-xl space-y-4">
-                <div className="flex items-center justify-between border-b border-[#557945]/20 pb-3">
-                  <div>
-                    <h3 className="text-sm font-bold text-[#F1F6F2] tracking-tight">AI Matching Volume</h3>
-                    <p className="text-[11px] text-[#8BA190]">Conversational queries and mentor recommendations</p>
-                  </div>
-                  <span className="text-[11px] font-mono text-[#84CC78] bg-[#0E1610] px-2.5 py-1 rounded-lg border border-[#557945]/30">
-                    {totalConversations} Inquiries
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 pt-2">
-                  <div className="p-4 rounded-2xl bg-[#0E1610]/80 border border-[#557945]/25">
-                    <span className="text-[10px] text-[#8BA190] uppercase font-bold block mb-1">Total Chat Sessions</span>
-                    <span className="text-2xl font-black text-[#FFCB3D]">{totalConversations}</span>
-                    <p className="text-[11px] text-[#A2B5A6] mt-1">Active career inquiries</p>
-                  </div>
-
-                  <div className="p-4 rounded-2xl bg-[#0E1610]/80 border border-[#557945]/25">
-                    <span className="text-[10px] text-[#8BA190] uppercase font-bold block mb-1">Total AI Messages</span>
-                    <span className="text-2xl font-black text-[#84CC78]">{totalMessages}</span>
-                    <p className="text-[11px] text-[#A2B5A6] mt-1">Tokens &amp; queries exchanged</p>
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-[#142017]/50 border border-[#557945]/20 flex items-center justify-between text-xs">
-                  <span className="text-[#D0DDD2]">Vector Index Status</span>
-                  <span className="text-[#84CC78] font-mono font-bold flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#84CC78]" />
-                    ChromaDB 50 Mentors Indexed
-                  </span>
-                </div>
               </div>
             </div>
           </div>
         );
       })()}
 
-      {/* Tab 2: User Directory */}
+      {/* ========================================================================= */}
+      {/* TAB 2: USER DIRECTORY */}
+      {/* ========================================================================= */}
       {activeTab === 'users' && (
-        <div className="glass-panel rounded-2xl p-5 shadow-xl border border-[#557945]/30 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#557945]/20">
-            <h2 className="text-sm font-bold text-[#F1F6F2] uppercase">User Directory</h2>
+        <div className="bg-white rounded-xl border border-[#E4E7EC] p-5 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E4E7EC]">
+            <div>
+              <h2 className="text-base font-bold text-[#202124]">User Directory</h2>
+              <p className="text-xs text-[#667085]">Manage registered students, mentors, and administrators</p>
+            </div>
 
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-[#557945]" />
+                <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-[#98A2B3]" />
                 <input
                   type="text"
                   value={usersSearch}
@@ -573,8 +432,8 @@ export default function AdminDashboard() {
                     setUsersPage(1);
                   }}
                   onKeyDown={(e) => e.key === 'Enter' && loadUsers()}
-                  placeholder="Search user..."
-                  className="pl-8 pr-3 py-1.5 glass-input rounded-xl text-xs text-[#F1F6F2] placeholder-[#557945] w-48 focus:outline-none"
+                  placeholder="Search by name or email..."
+                  className="pl-8 pr-3 py-1.5 text-xs bg-white border border-[#D0D5DD] rounded-lg text-[#202124] placeholder-[#98A2B3] w-52 focus:outline-none focus:border-[#315E9E]"
                 />
               </div>
 
@@ -584,12 +443,12 @@ export default function AdminDashboard() {
                   setUsersRoleFilter(e.target.value);
                   setUsersPage(1);
                 }}
-                className="glass-input rounded-xl px-2.5 py-1.5 text-xs text-[#F1F6F2] focus:outline-none"
+                className="bg-white border border-[#D0D5DD] rounded-lg px-2.5 py-1.5 text-xs text-[#202124] focus:outline-none focus:border-[#315E9E]"
               >
-                <option value="" className="bg-[#0E1610]">All Roles</option>
-                <option value="student" className="bg-[#0E1610]">Student</option>
-                <option value="mentor" className="bg-[#0E1610]">Mentor</option>
-                <option value="admin" className="bg-[#0E1610]">Admin</option>
+                <option value="">All Roles</option>
+                <option value="student">Student</option>
+                <option value="mentor">Mentor</option>
+                <option value="admin">Admin</option>
               </select>
 
               <select
@@ -598,18 +457,18 @@ export default function AdminDashboard() {
                   setUsersStatusFilter(e.target.value);
                   setUsersPage(1);
                 }}
-                className="glass-input rounded-xl px-2.5 py-1.5 text-xs text-[#F1F6F2] focus:outline-none"
+                className="bg-white border border-[#D0D5DD] rounded-lg px-2.5 py-1.5 text-xs text-[#202124] focus:outline-none focus:border-[#315E9E]"
               >
-                <option value="" className="bg-[#0E1610]">All Statuses</option>
-                <option value="active" className="bg-[#0E1610]">Active</option>
-                <option value="suspended" className="bg-[#0E1610]">Suspended</option>
+                <option value="">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
               </select>
             </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-[#0E1610] text-[#8BA190] uppercase font-bold text-[10px] border-b border-[#557945]/30">
+              <thead className="bg-[#F8F9FA] text-[#667085] uppercase font-semibold text-[10px] border-b border-[#E4E7EC]">
                 <tr>
                   <th className="py-2.5 px-3">User</th>
                   <th className="py-2.5 px-3">Role</th>
@@ -617,19 +476,19 @@ export default function AdminDashboard() {
                   <th className="py-2.5 px-3">Mentor ID</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#557945]/20">
+              <tbody className="divide-y divide-[#E4E7EC]">
                 {usersList.map((u) => (
-                  <tr key={u.userId} className="hover:bg-[#152318]/40 transition">
+                  <tr key={u.userId} className="hover:bg-[#F8F9FA] transition">
                     <td className="py-2.5 px-3">
-                      <div className="font-semibold text-[#F1F6F2]">{u.fullName}</div>
-                      <div className="text-[11px] text-[#A2B5A6]">{u.email}</div>
+                      <div className="font-semibold text-[#202124]">{u.fullName}</div>
+                      <div className="text-[11px] text-[#667085]">{u.email}</div>
                     </td>
                     <td className="py-2.5 px-3">
                       <select
                         value={u.role}
                         disabled={isUpdatingUser}
                         onChange={(e) => handleRoleChange(u.userId, e.target.value)}
-                        className="bg-[#0E1610] border border-[#557945]/30 text-xs rounded-lg px-2 py-1 text-[#D0DDD2] focus:outline-none"
+                        className="bg-white border border-[#D0D5DD] text-xs rounded-md px-2 py-1 text-[#202124] focus:outline-none focus:border-[#315E9E]"
                       >
                         <option value="student">Student</option>
                         <option value="mentor">Mentor</option>
@@ -641,17 +500,17 @@ export default function AdminDashboard() {
                         value={u.status}
                         disabled={isUpdatingUser}
                         onChange={(e) => handleStatusChange(u.userId, e.target.value)}
-                        className={`text-xs rounded-lg px-2 py-1 font-semibold border ${
+                        className={`text-xs rounded-md px-2 py-1 font-semibold border ${
                           u.status === 'active'
-                            ? 'bg-[#5D9253]/20 border-[#5D9253]/40 text-[#84CC78]'
-                            : 'bg-rose-500/20 border-rose-500/40 text-rose-300'
+                            ? 'bg-emerald-50 border-emerald-200 text-[#027A48]'
+                            : 'bg-rose-50 border-rose-200 text-[#D92D20]'
                         }`}
                       >
-                        <option value="active" className="bg-[#0E1610]">Active</option>
-                        <option value="suspended" className="bg-[#0E1610]">Suspended</option>
+                        <option value="active">Active</option>
+                        <option value="suspended">Suspended</option>
                       </select>
                     </td>
-                    <td className="py-2.5 px-3 font-mono font-bold text-[#FFCB3D]">
+                    <td className="py-2.5 px-3 font-mono font-bold text-[#315E9E]">
                       {u.mentorId || '-'}
                     </td>
                   </tr>
@@ -660,20 +519,20 @@ export default function AdminDashboard() {
             </table>
           </div>
 
-          <div className="flex items-center justify-between pt-2 border-t border-[#557945]/20 text-xs text-[#A2B5A6]">
+          <div className="flex items-center justify-between pt-2 border-t border-[#E4E7EC] text-xs text-[#667085]">
             <span>Page {usersPage} (Total: {usersTotal})</span>
             <div className="flex gap-2">
               <button
                 disabled={usersPage <= 1}
                 onClick={() => setUsersPage((p) => Math.max(1, p - 1))}
-                className="px-3 py-1 rounded-lg bg-[#142017] border border-[#557945]/30 disabled:opacity-40"
+                className="px-3 py-1 rounded-md bg-white border border-[#D0D5DD] disabled:opacity-40 hover:bg-[#F8F9FA] cursor-pointer"
               >
                 Prev
               </button>
               <button
                 disabled={usersList.length < 15}
                 onClick={() => setUsersPage((p) => p + 1)}
-                className="px-3 py-1 rounded-lg bg-[#142017] border border-[#557945]/30 disabled:opacity-40"
+                className="px-3 py-1 rounded-md bg-white border border-[#D0D5DD] disabled:opacity-40 hover:bg-[#F8F9FA] cursor-pointer"
               >
                 Next
               </button>
@@ -682,96 +541,192 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Tab 3: Platform Bookings with Live Join & 3 Stages Tracking */}
+      {/* ========================================================================= */}
+      {/* TAB 3: PLATFORM BOOKINGS & MEETING OVERSIGHT */}
+      {/* ========================================================================= */}
       {activeTab === 'bookings' && (
-        <div className="glass-panel rounded-2xl p-5 shadow-xl border border-[#557945]/30 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[#557945]/20">
+        <div className="bg-white rounded-xl border border-[#E4E7EC] p-5 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E4E7EC]">
             <div>
-              <h2 className="text-sm font-bold text-[#F1F6F2] uppercase">Meeting &amp; Call Oversight</h2>
-              <span className="text-[11px] text-[#A2B5A6]">Join live meetings to monitor sessions; track stages (upcoming, pending, completed, cancelled)</span>
+              <h2 className="text-base font-bold text-[#202124]">Meeting &amp; Session Oversight</h2>
+              <span className="text-xs text-[#667085]">
+                Review student booking requests, approve pending sessions, and monitor Google Meet calls
+              </span>
             </div>
-            <span className="font-mono font-bold text-xs text-[#FFCB3D] bg-[#0E1610] px-2.5 py-1 rounded-lg border border-[#557945]/30">
-              {bookingsTotal} Sessions
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-bold text-xs text-[#315E9E] bg-[#EFF4FA] px-2.5 py-1 rounded-md">
+                {bookingsTotal} Total Sessions
+              </span>
+            </div>
+          </div>
+
+          {/* Filter Toolbar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-[#F8F9FA] rounded-lg border border-[#E4E7EC]">
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-[#98A2B3]" />
+              <input
+                type="text"
+                value={bookingsSearch}
+                onChange={(e) => {
+                  setBookingsSearch(e.target.value);
+                  setBookingsPage(1);
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && loadBookings()}
+                placeholder="Search by student, mentor, or ID..."
+                className="pl-8 pr-3 py-1.5 text-xs bg-white border border-[#D0D5DD] rounded-lg text-[#202124] placeholder-[#98A2B3] w-full focus:outline-none focus:border-[#315E9E]"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <select
+                value={bookingsStatusFilter}
+                onChange={(e) => {
+                  setBookingsStatusFilter(e.target.value);
+                  setBookingsPage(1);
+                }}
+                className="bg-white border border-[#D0D5DD] rounded-lg px-2.5 py-1.5 text-xs text-[#202124] focus:outline-none focus:border-[#315E9E]"
+              >
+                <option value="">All Statuses</option>
+                <option value="pending">Pending Approval (Action Required)</option>
+                <option value="confirmed">Confirmed / Upcoming</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+
+              <button
+                type="button"
+                onClick={loadBookings}
+                className="px-3 py-1.5 bg-white border border-[#D0D5DD] text-xs font-semibold text-[#344054] rounded-lg hover:bg-[#F2F4F7] cursor-pointer"
+              >
+                Refresh
+              </button>
+            </div>
           </div>
 
           <div className="space-y-3">
-            {bookingsList.map((b) => {
-              const currentStage = b.status === 'confirmed' ? 'upcoming' : b.status;
-              return (
-                <div
-                  key={b.bookingId}
-                  className="p-4 glass-card rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-[#F1F6F2]">
-                        {b.userName} &amp; {b.mentorName}
-                      </span>
-                      <span className="text-[10px] font-mono text-[#FFCB3D] bg-[#0E1610] px-1.5 py-0.2 rounded border border-[#557945]/30">
-                        {b.mentorId}
-                      </span>
+            {bookingsList.length === 0 ? (
+              <div className="py-12 text-center text-[#667085] text-xs border border-dashed border-[#E4E7EC] rounded-xl">
+                No session bookings found matching the current filters.
+              </div>
+            ) : (
+              bookingsList.map((b) => {
+                const isPending = b.status === 'pending';
+                const currentStage = b.status === 'confirmed' ? 'upcoming' : b.status;
+
+                return (
+                  <div
+                    key={b.bookingId}
+                    className={`p-4 bg-white rounded-xl border shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 transition ${
+                      isPending
+                        ? 'border-amber-300 bg-amber-50/20'
+                        : 'border-[#E4E7EC] hover:border-[#315E9E]/40'
+                    }`}
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-[#202124]">
+                          {b.userName} &amp; {b.mentorName}
+                        </span>
+                        <span className="text-[11px] font-mono text-[#315E9E] bg-[#EFF4FA] px-2 py-0.5 rounded font-bold">
+                          {b.mentorId}
+                        </span>
+                        {isPending && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-[#B54708] border border-amber-300 animate-pulse">
+                            Pending Approval
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="text-xs text-[#344054]">
+                        <span className="font-semibold">Topic: </span>
+                        {b.topic || 'Mentorship consultation'}
+                      </div>
+                      <div className="text-[11px] text-[#667085] font-mono">
+                        {new Date(b.slotStart).toUTCString()} &bull; ID: {b.bookingId}
+                      </div>
                     </div>
 
-                    <div className="text-xs text-[#D0DDD2]">{b.topic}</div>
-                    <div className="text-[11px] text-[#8BA190] font-mono">
-                      {new Date(b.slotStart).toUTCString()} &bull; ID: {b.bookingId}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/* 1-Click Approve / Reject for Pending Sessions */}
+                      {isPending && (
+                        <div className="flex items-center gap-1.5 mr-2">
+                          <button
+                            type="button"
+                            disabled={updatingBookingId === b.bookingId}
+                            onClick={() => handleApproveBooking(b.bookingId)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#027A48] hover:bg-[#05603A] text-white text-xs font-semibold rounded-lg transition shadow-xs cursor-pointer disabled:opacity-50"
+                            title="Approve booking and confirm meeting"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Approve</span>
+                          </button>
+                          <button
+                            type="button"
+                            disabled={updatingBookingId === b.bookingId}
+                            onClick={() => handleRejectBooking(b.bookingId)}
+                            className="flex items-center gap-1 px-2.5 py-1.5 bg-white border border-rose-300 hover:bg-rose-50 text-[#D92D20] text-xs font-semibold rounded-lg transition cursor-pointer disabled:opacity-50"
+                            title="Reject session request"
+                          >
+                            <span>Reject</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Admin Join Call Button */}
+                      {b.meetingLink && b.status !== 'cancelled' && (
+                        <a
+                          href={b.meetingLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#315E9E] hover:bg-[#26497B] text-white text-xs font-semibold rounded-lg transition shadow-xs"
+                          title="Join Meeting directly to monitor session"
+                        >
+                          <Video className="w-3.5 h-3.5" />
+                          <span>Join Call</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+
+                      {/* Stage Tracker Selector: upcoming, pending, completed, cancelled */}
+                      <div className="flex items-center gap-1.5 bg-[#F8F9FA] p-1 rounded-lg border border-[#D0D5DD]">
+                        <span className="text-[10px] text-[#667085] px-1 font-semibold uppercase">Stage:</span>
+                        <select
+                          value={currentStage}
+                          disabled={updatingBookingId === b.bookingId}
+                          onChange={(e) => handleBookingStageChange(b.bookingId, e.target.value)}
+                          className={`text-xs font-bold rounded-md px-2 py-1 border focus:outline-none transition ${
+                            currentStage === 'upcoming'
+                              ? 'bg-emerald-50 border-emerald-200 text-[#027A48]'
+                              : currentStage === 'pending'
+                              ? 'bg-amber-50 border-amber-200 text-[#B54708]'
+                              : currentStage === 'completed'
+                              ? 'bg-blue-50 border-blue-200 text-[#315E9E]'
+                              : 'bg-rose-50 border-rose-200 text-[#D92D20]'
+                          }`}
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="upcoming">Upcoming (Approved)</option>
+                          <option value="completed">Completed</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    {/* Admin Join Meeting Button */}
-                    {b.meetingLink && b.status !== 'cancelled' && (
-                      <a
-                        href={b.meetingLink}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#5D9253] hover:bg-[#5D9253]/90 text-[#090E0A] text-xs font-bold rounded-xl transition shadow-sm"
-                        title="Join Meeting directly to monitor call"
-                      >
-                        <Video className="w-3.5 h-3.5" />
-                        <span>Join Call</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    )}
-
-                    {/* Stage Tracker Selector: upcoming, pending, completed, cancelled */}
-                    <div className="flex items-center gap-1.5 bg-[#0E1610] p-1 rounded-xl border border-[#557945]/30">
-                      <span className="text-[10px] text-[#8BA190] px-1 font-semibold uppercase">Stage:</span>
-                      <select
-                        value={currentStage}
-                        disabled={updatingBookingId === b.bookingId}
-                        onChange={(e) => handleBookingStageChange(b.bookingId, e.target.value)}
-                        className={`text-xs font-bold rounded-lg px-2 py-1 border focus:outline-none transition ${
-                          currentStage === 'upcoming'
-                            ? 'bg-[#5D9253]/20 border-[#5D9253]/40 text-[#84CC78]'
-                            : currentStage === 'pending'
-                            ? 'bg-[#F1A344]/20 border-[#F1A344]/40 text-[#F1A344]'
-                            : currentStage === 'completed'
-                            ? 'bg-[#FFCB3D]/20 border-[#FFCB3D]/40 text-[#FFCB3D]'
-                            : 'bg-rose-500/20 border-rose-500/40 text-rose-300'
-                        }`}
-                      >
-                        <option value="upcoming" className="bg-[#0E1610]">Upcoming</option>
-                        <option value="pending" className="bg-[#0E1610]">Pending</option>
-                        <option value="completed" className="bg-[#0E1610]">Completed</option>
-                        <option value="cancelled" className="bg-[#0E1610]">Cancelled</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
       )}
 
-      {/* Tab 4: Security Audit Trail */}
+      {/* ========================================================================= */}
+      {/* TAB 4: SECURITY AUDIT TRAIL */}
+      {/* ========================================================================= */}
       {activeTab === 'audit' && (
-        <div className="glass-panel rounded-2xl p-5 shadow-xl border border-[#557945]/30 space-y-3">
-          <div className="flex items-center justify-between pb-2 border-b border-[#557945]/20">
-            <h2 className="text-sm font-bold text-[#F1F6F2] uppercase">Security Audit Trail</h2>
-            <span className="font-mono text-xs text-[#84CC78] bg-[#0E1610] px-2 py-0.5 rounded-lg border border-[#557945]/30">
+        <div className="bg-white rounded-xl border border-[#E4E7EC] p-5 shadow-xs space-y-3">
+          <div className="flex items-center justify-between pb-2 border-b border-[#E4E7EC]">
+            <h2 className="text-base font-bold text-[#202124]">Security Audit Trail</h2>
+            <span className="font-mono text-xs text-[#315E9E] bg-[#EFF4FA] px-2 py-0.5 rounded-md font-bold">
               {auditTotal} Events
             </span>
           </div>
@@ -780,16 +735,16 @@ export default function AdminDashboard() {
             {auditLogs.map((log, idx) => (
               <div
                 key={idx}
-                className="p-2.5 bg-[#0E1610] border border-[#557945]/25 rounded-xl flex items-center justify-between text-xs"
+                className="p-3 bg-[#F8F9FA] border border-[#E4E7EC] rounded-lg flex items-center justify-between text-xs"
               >
                 <div>
-                  <span className="font-mono text-[10px] text-[#FFCB3D] uppercase font-bold mr-2">
+                  <span className="font-mono text-[11px] text-[#315E9E] uppercase font-bold mr-2">
                     {log.action}
                   </span>
-                  <span className="text-[#D0DDD2]">{log.targetUser || log.targetUserId}</span>
-                  <span className="text-[10px] text-[#8BA190] ml-2">by {log.adminEmail}</span>
+                  <span className="text-[#202124] font-medium">{log.targetUser || log.targetUserId}</span>
+                  <span className="text-[11px] text-[#667085] ml-2">by {log.adminEmail}</span>
                 </div>
-                <span className="text-[10px] text-[#A2B5A6] font-mono">
+                <span className="text-[11px] text-[#667085] font-mono">
                   {log.timestamp ? new Date(log.timestamp).toISOString().replace('T', ' ').slice(0, 19) : ''}
                 </span>
               </div>

@@ -1,40 +1,32 @@
 @import "tailwindcss";
 
 @theme {
-  --color-gold: #FFCB3D;
-  --color-gold-hover: #F0BC28;
-  --color-gold-dark: #C68E12;
-  --color-gold-deep: #473204;
+  --color-brand-primary: #315E9E;
+  --color-brand-hover: #26497B;
+  --color-brand-light: #EFF4FA;
+  --color-brand-border: #D0DCEB;
 
-  --color-ochre: #F1A344;
-  --color-ochre-dark: #B96F16;
-  --color-ochre-deep: #422503;
+  --color-surface-bg: #F8F9FA;
+  --color-surface-card: #FFFFFF;
+  --color-surface-subtle: #F2F4F7;
+  --color-surface-border: #E4E7EC;
 
-  --color-sage: #5D9253;
-  --color-sage-dark: #3F6937;
-  --color-sage-deep: #1A3016;
+  --color-text-primary: #202124;
+  --color-text-secondary: #667085;
+  --color-text-muted: #98A2B3;
 
-  --color-moss: #557945;
-  --color-moss-dark: #39552B;
-  --color-moss-deep: #162410;
-
-  --color-forest-950: #090E0A;
-  --color-forest-900: #0E1610;
-  --color-forest-850: #141F17;
-  --color-forest-800: #1B291F;
-  --color-forest-750: #233428;
-  --color-forest-700: #304637;
-  --color-forest-600: #44614D;
-  --color-forest-500: #5D8069;
+  --color-accent-success: #12B76A;
+  --color-accent-warning: #F79009;
+  --color-accent-danger: #D92D20;
 }
 
 @layer base {
   body {
-    background-color: #090E0A;
-    color: #F1F6F2;
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #F8F9FA;
+    color: #202124;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     min-height: 100vh;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.011em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
@@ -44,58 +36,83 @@
   }
 }
 
-/* Glassmorphism primitives */
-.glass-panel {
-  background: rgba(14, 22, 16, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(85, 121, 69, 0.28);
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.55), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+/* Productivity Surface Utility Classes (Strictly No Gradients) */
+.surface-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E4E7EC;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px 0 rgba(16, 24, 40, 0.06), 0 1px 2px 0 rgba(16, 24, 40, 0.04);
 }
 
-.glass-panel-elevated {
-  background: rgba(20, 31, 23, 0.82);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(93, 146, 83, 0.35);
-  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.65), 0 0 20px -5px rgba(93, 146, 83, 0.12), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+.surface-card-elevated {
+  background-color: #FFFFFF;
+  border: 1px solid #E4E7EC;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px -2px rgba(16, 24, 40, 0.08), 0 2px 4px -2px rgba(16, 24, 40, 0.04);
 }
 
-.glass-floating-nav {
-  background: rgba(12, 19, 14, 0.82);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(85, 121, 69, 0.32);
-  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.6), 0 0 25px -8px rgba(85, 121, 69, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.07);
-}
-
-.glass-card {
-  background: rgba(18, 28, 20, 0.6);
+.surface-nav {
+  background-color: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(85, 121, 69, 0.24);
-  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.4);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border-bottom: 1px solid #E4E7EC;
+  box-shadow: 0 1px 3px 0 rgba(16, 24, 40, 0.05);
 }
 
-.glass-card:hover {
-  border-color: rgba(93, 146, 83, 0.45);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 30px -6px rgba(0, 0, 0, 0.55), 0 0 18px -4px rgba(93, 146, 83, 0.16);
+.surface-sidebar {
+  background-color: #FFFFFF;
+  border-right: 1px solid #E4E7EC;
 }
 
-.glass-input {
-  background: rgba(11, 18, 13, 0.7);
-  border: 1px solid rgba(85, 121, 69, 0.3);
-  color: #F1F6F2;
-  transition: all 0.2s ease;
+.surface-input {
+  background-color: #FFFFFF;
+  border: 1px solid #D0D5DD;
+  color: #202124;
+  border-radius: 8px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.glass-input:focus {
+.surface-input:focus {
   outline: none;
-  border-color: #FFCB3D;
-  box-shadow: 0 0 0 3px rgba(255, 203, 61, 0.2);
-  background: rgba(14, 23, 16, 0.85);
+  border-color: #315E9E;
+  box-shadow: 0 0 0 3px rgba(49, 94, 158, 0.15);
+}
+
+/* Primary Button Styling */
+.btn-primary {
+  background-color: #315E9E;
+  color: #FFFFFF;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 8px 16px;
+  transition: background-color 0.15s ease, transform 0.05s ease;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #26497B;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Secondary Button Styling */
+.btn-secondary {
+  background-color: #FFFFFF;
+  color: #344054;
+  border: 1px solid #D0D5DD;
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 8px 16px;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #F9FAFB;
+  border-color: #98A2B3;
 }
 
 /* Custom Scrollbars */
@@ -104,12 +121,12 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #090E0A;
+  background: #F8F9FA;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(85, 121, 69, 0.35);
+  background: #D0D5DD;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(93, 146, 83, 0.6);
+  background: #98A2B3;
 }

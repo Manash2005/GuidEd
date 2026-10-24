@@ -16,7 +16,20 @@ import {
   Mail,
   CheckCircle2,
   Plus,
-  RotateCcw
+  RotateCcw,
+  Search,
+  ChevronDown,
+  ChevronUp,
+  AlertCircle,
+  Building2,
+  MapPin,
+  Award,
+  Layers,
+  Wrench,
+  Info,
+  CalendarCheck,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 
 export default function StudentDashboard() {
@@ -24,16 +37,44 @@ export default function StudentDashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'chat';
 
+  // Navigation tab helper
+  const setActiveTab = (tab) => {
+    if (tab === 'chat') {
+      setSearchParams({});
+    } else {
+      setSearchParams({ tab });
+    }
+  };
+
   const [dashboardData, setDashboardData] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [conversations, setConversations] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [activeConvId, setActiveConvId] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
   const [inputQuery, setInputQuery] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Sidebar responsive toggle
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Rename conversation modal state
+  const [renamingConvId, setRenamingConvId] = useState(null);
+  const [newTitleInput, setNewTitleInput] = useState('');
+
+  // Expandable mentor cards state
+  const [expandedMentors, setExpandedMentors] = useState({});
+
+  const toggleMentorExpand = (mentorId) => {
+    setExpandedMentors((prev) => ({
+      ...prev,
+      [mentorId]: !prev[mentorId]
+    }));
+  };
+
   const messagesEndRef = useRef(null);
+  const chatInputRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -52,8 +93,9 @@ export default function StudentDashboard() {
   const [bookingTopic, setBookingTopic] = useState('');
   const [isBooking, setIsBooking] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(null);
+  const [bookingConflictError, setBookingConflictError] = useState('');
 
-  // Profile Edit State (with editable email)
+  // Profile Edit State
   const [email, setEmail] = useState(user?.email || '');
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [targetDomain, setTargetDomain] = useState(user?.targetDomain || 'Artificial Intelligence');
@@ -126,10 +168,54 @@ export default function StudentDashboard() {
     setActiveConvId(null);
     setChatMessages([]);
     setErrorMsg('');
+    if (window.innerWidth < 768) setSidebarOpen(false);
+    setTimeout(() => chatInputRef.current?.focus(), 100);
+  };
+
+  const handleSelectConversation = (convId) => {
+    setActiveConvId(convId);
+    setErrorMsg('');
+    if (window.innerWidth < 768) setSidebarOpen(false);
+  };
+
+  const handleStartRename = (conv, e) => {
+    e.stopPropagation();
+    setRenamingConvId(conv.conversationId);
+    setNewTitleInput(conv.title || '');
+  };
+
+  const handleSaveRename = async (e) => {
+    e.preventDefault();
+    if (!renamingConvId || !newTitleInput.trim()) return;
+    try {
+      await studentApi.updateConversationTitle(renamingConvId, newTitleInput.trim());
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.conversationId === renamingConvId ? { ...c, title: newTitleInput.trim() } : c
+        )
+      );
+      setRenamingConvId(null);
+    } catch (err) {
+      console.error('Failed to rename conversation:', err);
+    }
+  };
+
+  const handleDeleteConversation = async (convId, e) => {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to delete this career conversation?')) return;
+    try {
+      await studentApi.deleteConversation(convId);
+      setConversations((prev) => prev.filter((c) => c.conversationId !== convId));
+      if (activeConvId === convId) {
+        handleNewChat();
+      }
+    } catch (err) {
+      console.error('Failed to delete conversation:', err);
+    }
   };
 
   const handleSendMessage = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     if (!inputQuery.trim() || isSending) return;
 
     setErrorMsg('');
@@ -140,13 +226,14 @@ export default function StudentDashboard() {
     const tempUserMsg = {
       messageId: `temp_${Date.now()}`,
       role: 'user',
-      content: userText
+      content: userText,
+      recommendations: []
     };
     setChatMessages((prev) => [...prev, tempUserMsg]);
 
     try {
       if (!activeConvId) {
-        // Create new conversation with the initial query
+        // Create new conversation with auto-generated title
         const newConv = await studentApi.createConversation({
           initialMessage: userText
         });
@@ -156,7 +243,7 @@ export default function StudentDashboard() {
         }
         await loadConversations();
       } else {
-        // Send to existing conversation and retrieve LLM recommendations
+        // Send message to current conversation
         const asstMsg = await studentApi.sendMessage(activeConvId, userText);
         setChatMessages((prev) => {
           const filtered = prev.filter((m) => m.messageId !== tempUserMsg.messageId);
@@ -165,7 +252,10 @@ export default function StudentDashboard() {
         await loadConversations();
       }
     } catch (err) {
-      setErrorMsg(err.message || 'Failed to process AI recommendation');
+      setErrorMsg(
+        err.message ||
+        'I can help with career planning, professional skills, interview preparation, and finding mentors. Could you rephrase your question around your career goals?'
+      );
     } finally {
       setIsSending(false);
     }
@@ -177,443 +267,598 @@ export default function StudentDashboard() {
     setBookingTopic(`Career mentorship in ${mentor.domain || 'Technology'}`);
     setSelectedSlot(null);
     setBookingSuccess(null);
+    setBookingConflictError('');
     fetchSlotsForDate(mentor.mentorId, bookingDate);
   };
 
-  const fetchSlotsForDate = async (mentorId, date) => {
+  const fetchSlotsForDate = async (mentorId, dateStr) => {
     setLoadingSlots(true);
-    setRawSlots([]);
+    setSelectedSlot(null);
+    setBookingConflictError('');
     try {
-      const res = await studentApi.getMentorSlots(mentorId, date, 30);
-      // Backend returns array of { slotStart, slotEnd, isAvailable }
-      const slotsList = Array.isArray(res) ? res : (res.availableSlots || []);
-      setRawSlots(slotsList);
+      const slots = await studentApi.getMentorSlots(mentorId, dateStr, 30);
+      setRawSlots(slots || []);
     } catch (err) {
       console.error('Failed to fetch mentor slots:', err);
+      setRawSlots([]);
     } finally {
       setLoadingSlots(false);
     }
   };
 
-  const formatSlotTime = (isoString) => {
-    if (!isoString) return '';
-    const d = new Date(isoString);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC';
+  const handleDateChange = (e) => {
+    const newDate = e.target.value;
+    setBookingDate(newDate);
+    if (bookingModalMentor) {
+      fetchSlotsForDate(bookingModalMentor.mentorId, newDate);
+    }
+  };
+
+  // Safe Single Slot Selection Fix (Phase 4)
+  const handleSelectSlot = (slot) => {
+    if (slot.isAvailable === false) return;
+    // Strictly assign the selected slot object
+    setSelectedSlot(slot);
+    setBookingConflictError('');
   };
 
   const handleConfirmBooking = async () => {
     if (!selectedSlot || !bookingModalMentor) return;
-
     setIsBooking(true);
-    setErrorMsg('');
+    setBookingConflictError('');
+
     try {
       const payload = {
         mentorId: bookingModalMentor.mentorId,
-        slotStart: selectedSlot.slotStart || selectedSlot.start,
+        slotStart: selectedSlot.slotStart,
         durationMinutes: 30,
-        topic: bookingTopic.trim() || 'Mentorship Discussion'
+        topic: bookingTopic.trim() || `Mentorship session with ${bookingModalMentor.name}`
       };
-      const res = await studentApi.bookSlot(payload);
-      setBookingSuccess(res);
-      loadBookings();
-      loadDashboard();
+
+      const result = await studentApi.bookSlot(payload);
+      setBookingSuccess(result);
+      await loadBookings();
+      await loadDashboard();
     } catch (err) {
-      setErrorMsg(err.message || 'Failed to complete booking');
+      if (err.status === 409 || err.message?.includes('already has a confirmed booking')) {
+        setBookingConflictError(
+          'This slot was just booked by another user. Please choose a different available time slot.'
+        );
+        fetchSlotsForDate(bookingModalMentor.mentorId, bookingDate);
+      } else {
+        setBookingConflictError(err.message || 'Failed to complete booking. Please try again.');
+      }
     } finally {
       setIsBooking(false);
     }
   };
 
   const handleCancelBooking = async (bookingId) => {
-    if (!window.confirm('Cancel this scheduled mentorship session?')) return;
+    if (!window.confirm('Are you sure you want to cancel this mentorship session?')) return;
     try {
       await studentApi.cancelBooking(bookingId);
-      loadBookings();
-      loadDashboard();
+      await loadBookings();
+      await loadDashboard();
     } catch (err) {
-      alert(err.message || 'Failed to cancel session');
+      alert(err.message || 'Failed to cancel booking');
     }
   };
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     setProfileError('');
+    setProfileSaved(false);
+
     try {
       await authApi.updateProfile({
-        email: email.trim().toLowerCase(),
         fullName: fullName.trim(),
+        email: email.trim().toLowerCase(),
         targetDomain,
         educationLevel
       });
       setProfileSaved(true);
       setTimeout(() => setProfileSaved(false), 3000);
     } catch (err) {
-      setProfileError(err.message || 'Failed to update profile');
+      setProfileError(err.message || 'Failed to update profile settings');
     }
   };
 
+  const formatSlotTime = (isoString) => {
+    if (!isoString) return '';
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC';
+    } catch {
+      return isoString;
+    }
+  };
+
+  // Group conversations chronologically (Today, Yesterday, Previous 7 Days, Older)
+  const groupConversations = (convList) => {
+    const groups = { Today: [], Yesterday: [], 'Previous 7 Days': [], Older: [] };
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    const weekAgo = new Date(now);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+
+    convList.forEach((conv) => {
+      const convDate = new Date(conv.updatedAt || conv.createdAt);
+      const dateStr = convDate.toISOString().split('T')[0];
+
+      if (dateStr === todayStr) {
+        groups.Today.push(conv);
+      } else if (dateStr === yesterdayStr) {
+        groups.Yesterday.push(conv);
+      } else if (convDate >= weekAgo) {
+        groups['Previous 7 Days'].push(conv);
+      } else {
+        groups.Older.push(conv);
+      }
+    });
+
+    return groups;
+  };
+
+  const filteredConversations = conversations.filter((c) =>
+    (c.title || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  const groupedConvs = groupConversations(filteredConversations);
+
+  // Extract latest recommendations from the chat messages
+  const latestAssistantMsgWithRecs = [...chatMessages]
+    .reverse()
+    .find((m) => m.role === 'assistant' && m.recommendations && m.recommendations.length > 0);
+  const latestRecs = latestAssistantMsgWithRecs?.recommendations || [];
+
   return (
-    <div className="space-y-6 font-sans">
-      {/* Clean Header & Stats */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#557945]/20">
-        <div>
-          <h1 className="text-2xl font-extrabold text-[#F1F6F2] tracking-tight">Student Workspace</h1>
+    <div className="space-y-6">
+      {/* Tab Navigation Subheader */}
+      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[#E4E7EC]">
+        <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-[#E4E7EC] shadow-xs">
+          <button
+            onClick={() => setActiveTab('chat')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition cursor-pointer ${
+              activeTab === 'chat'
+                ? 'bg-[#315E9E] text-white shadow-xs'
+                : 'text-[#667085] hover:text-[#202124] hover:bg-[#F8F9FA]'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>AI Career Advisor</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('bookings')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition cursor-pointer ${
+              activeTab === 'bookings'
+                ? 'bg-[#315E9E] text-white shadow-xs'
+                : 'text-[#667085] hover:text-[#202124] hover:bg-[#F8F9FA]'
+            }`}
+          >
+            <Calendar className="w-4 h-4" />
+            <span>Upcoming Sessions ({bookings.filter((b) => b.status === 'confirmed').length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('profile')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition cursor-pointer ${
+              activeTab === 'profile'
+                ? 'bg-[#315E9E] text-white shadow-xs'
+                : 'text-[#667085] hover:text-[#202124] hover:bg-[#F8F9FA]'
+            }`}
+          >
+            <User className="w-4 h-4" />
+            <span>Account Settings</span>
+          </button>
         </div>
 
-        {/* Real Stats */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="glass-card px-4 py-2 rounded-2xl">
-            <span className="text-[10px] text-[#8BA190] font-semibold uppercase block">Upcoming</span>
-            <span className="text-base font-bold text-[#84CC78]">{dashboardData?.stats?.upcomingBookings || 0}</span>
-          </div>
-          <div className="glass-card px-4 py-2 rounded-2xl">
-            <span className="text-[10px] text-[#8BA190] font-semibold uppercase block">Completed</span>
-            <span className="text-base font-bold text-[#FFCB3D]">{dashboardData?.stats?.completedBookings || 0}</span>
-          </div>
-        </div>
+        {activeTab === 'chat' && (
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="md:hidden flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-[#315E9E] bg-[#EFF4FA] border border-[#D0DCEB] rounded-lg"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>{sidebarOpen ? 'Hide History' : 'Chat History'}</span>
+          </button>
+        )}
       </div>
 
-      {/* Tabs - strictly AI Advisor, My Bookings, Profile (NO mentor directory) */}
-      <div className="flex items-center gap-2 border-b border-[#557945]/20 pb-2">
-        <button
-          onClick={() => setSearchParams({ tab: 'chat' })}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
-            activeTab === 'chat'
-              ? 'bg-[#557945]/30 text-[#FFCB3D] border border-[#557945]/40 shadow-sm'
-              : 'text-[#A2B5A6] hover:text-[#F1F6F2] hover:bg-[#152318]'
-          }`}
-        >
-          <Sparkles className="w-3.5 h-3.5 text-[#FFCB3D]" />
-          <span>AI Career Advisor</span>
-        </button>
-
-        <button
-          onClick={() => setSearchParams({ tab: 'bookings' })}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
-            activeTab === 'bookings'
-              ? 'bg-[#557945]/30 text-[#FFCB3D] border border-[#557945]/40 shadow-sm'
-              : 'text-[#A2B5A6] hover:text-[#F1F6F2] hover:bg-[#152318]'
-          }`}
-        >
-          <Calendar className="w-3.5 h-3.5 text-[#F1A344]" />
-          <span>My Bookings ({bookings.length})</span>
-        </button>
-
-        <button
-          onClick={() => setSearchParams({ tab: 'profile' })}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
-            activeTab === 'profile'
-              ? 'bg-[#557945]/30 text-[#FFCB3D] border border-[#557945]/40 shadow-sm'
-              : 'text-[#A2B5A6] hover:text-[#F1F6F2] hover:bg-[#152318]'
-          }`}
-        >
-          <User className="w-3.5 h-3.5 text-[#84CC78]" />
-          <span>Profile &amp; Email</span>
-        </button>
-      </div>
-
-      {/* Tab 1: AI Chat & LLM Mentor Suggestions (Full clean layout without pre-query mentor list) */}
+      {/* ========================================================================= */}
+      {/* TAB 1: CHAT-FIRST CAREER ADVISOR WORKSPACE (3 PANELS ON DESKTOP) */}
+      {/* ========================================================================= */}
       {activeTab === 'chat' && (
-        <div className="glass-panel rounded-3xl flex flex-col h-[750px] shadow-2xl overflow-hidden border border-[#557945]/35 max-w-5xl mx-auto">
-          {/* Header */}
-          <div className="px-6 py-4 border-b border-[#557945]/25 bg-[#0E1610]/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 backdrop-blur-md">
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 rounded-full bg-[#84CC78] shadow-sm animate-pulse" />
-              <div>
-                <h2 className="text-base sm:text-lg font-bold text-[#F1F6F2] tracking-tight">AI Career &amp; Mentor Matching</h2>
-                <p className="text-xs text-[#8BA190]">Personalized guidance grounded in verified mentor experience</p>
-              </div>
+        <div className="flex flex-col md:flex-row gap-5 items-stretch min-h-[680px]">
+          {/* PANEL 1: CONVERSATION SIDEBAR (270px) */}
+          <div
+            className={`w-full md:w-[280px] shrink-0 bg-white rounded-xl border border-[#E4E7EC] shadow-xs flex flex-col p-3.5 transition-all ${
+              sidebarOpen ? 'block' : 'hidden md:flex'
+            }`}
+          >
+            {/* New Chat Button */}
+            <button
+              onClick={handleNewChat}
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-3 bg-[#315E9E] hover:bg-[#26497B] text-white rounded-lg text-sm font-semibold transition shadow-xs cursor-pointer mb-3"
+            >
+              <Plus className="w-4 h-4" />
+              <span>New Conversation</span>
+            </button>
+
+            {/* Search Conversations Input */}
+            <div className="relative mb-3">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-[#98A2B3]" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search conversations..."
+                className="w-full pl-8 pr-3 py-1.5 text-xs bg-[#F8F9FA] border border-[#E4E7EC] rounded-lg text-[#202124] placeholder-[#98A2B3] focus:outline-none focus:border-[#315E9E] focus:bg-white transition"
+              />
             </div>
 
-            <div className="flex items-center gap-2.5">
-              {conversations.length > 1 && (
-                <select
-                  value={activeConvId || ''}
-                  onChange={(e) => setActiveConvId(e.target.value)}
-                  className="glass-input text-xs sm:text-sm px-3 py-1.5 rounded-xl border border-[#557945]/35 text-[#F1F6F2] bg-[#0E1610] focus:outline-none"
+            {/* Conversation Group List */}
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+              {filteredConversations.length === 0 ? (
+                <div className="text-center py-8 text-xs text-[#667085]">
+                  No conversation history found.
+                </div>
+              ) : (
+                Object.entries(groupedConvs).map(([groupTitle, convList]) => {
+                  if (convList.length === 0) return null;
+                  return (
+                    <div key={groupTitle} className="space-y-1">
+                      <div className="text-[11px] font-semibold text-[#98A2B3] uppercase tracking-wider px-2 py-1">
+                        {groupTitle}
+                      </div>
+                      {convList.map((conv) => {
+                        const isSelected = activeConvId === conv.conversationId;
+                        return (
+                          <div
+                            key={conv.conversationId}
+                            onClick={() => handleSelectConversation(conv.conversationId)}
+                            className={`group flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium cursor-pointer transition ${
+                              isSelected
+                                ? 'bg-[#EFF4FA] text-[#315E9E] font-semibold border border-[#D0DCEB]'
+                                : 'text-[#344054] hover:bg-[#F8F9FA]'
+                            }`}
+                          >
+                            <span className="truncate pr-2">
+                              {conv.title || 'Career Conversation'}
+                            </span>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
+                              <button
+                                onClick={(e) => handleStartRename(conv, e)}
+                                title="Rename"
+                                className="p-1 text-[#667085] hover:text-[#315E9E] rounded hover:bg-white"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={(e) => handleDeleteConversation(conv.conversationId, e)}
+                                title="Delete"
+                                className="p-1 text-[#667085] hover:text-[#D92D20] rounded hover:bg-white"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* PANEL 2: CENTER MAIN CHAT WORKSPACE */}
+          <div className="flex-1 bg-white rounded-xl border border-[#E4E7EC] shadow-xs flex flex-col overflow-hidden min-h-[640px]">
+            {/* Chat Workspace Header */}
+            <div className="p-4 border-b border-[#E4E7EC] flex items-center justify-between bg-white">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-[#EFF4FA] text-[#315E9E] flex items-center justify-center font-bold text-sm">
+                  <Sparkles className="w-4 h-4 text-[#315E9E]" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-[#202124] leading-tight">
+                    {conversations.find((c) => c.conversationId === activeConvId)?.title ||
+                      'Career Mentorship Advisor'}
+                  </h2>
+                  <p className="text-xs text-[#667085] leading-tight">
+                    Verified mentorship recommendations based on real profile data
+                  </p>
+                </div>
+              </div>
+
+              {activeConvId && (
+                <button
+                  onClick={handleNewChat}
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#315E9E] bg-[#EFF4FA] hover:bg-[#E0ECF8] rounded-lg transition cursor-pointer"
                 >
-                  {conversations.map((c) => (
-                    <option key={c.conversationId} value={c.conversationId} className="bg-[#0E1610]">
-                      {c.title ? (c.title.length > 28 ? c.title.slice(0, 28) + '...' : c.title) : 'Career Session'}
-                    </option>
-                  ))}
-                </select>
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>New Chat</span>
+                </button>
+              )}
+            </div>
+
+            {/* Error Banner (Friendly Guardrail / Validation display) */}
+            {errorMsg && (
+              <div className="p-3 bg-amber-50 border-b border-amber-200 text-[#B54708] text-xs flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-[#F79009]" />
+                  <span>{errorMsg}</span>
+                </div>
+                <button onClick={() => setErrorMsg('')} className="text-[#B54708] hover:underline">
+                  Dismiss
+                </button>
+              </div>
+            )}
+
+            {/* Chat Messages Scrolling Feed */}
+            <div className="flex-1 p-5 overflow-y-auto space-y-5 bg-[#FDFDFE]">
+              {chatMessages.length === 0 ? (
+                /* Welcome Initial Empty State */
+                <div className="max-w-xl mx-auto my-auto text-center py-10 space-y-4">
+                  <div className="w-12 h-12 rounded-xl bg-[#EFF4FA] text-[#315E9E] flex items-center justify-center mx-auto shadow-xs">
+                    <Sparkles className="w-6 h-6 text-[#315E9E]" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-[#202124]">
+                      Welcome to your Career Workspace
+                    </h3>
+                    <p className="text-sm text-[#667085] mt-1 max-w-md mx-auto">
+                      Ask any question about breaking into tech, preparing for interviews, or finding a verified mentor matching your goals.
+                    </p>
+                  </div>
+
+                  {/* Suggestion Prompts */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 text-left">
+                    {[
+                      'I want to break into AI product management and learn LLMs.',
+                      'Find me senior engineering mentors in Bengaluru with startup experience.',
+                      'How do I prepare for technical product manager interviews?',
+                      'Which mentors can guide me on venture capital and fundraising?'
+                    ].map((promptText, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => {
+                          setInputQuery(promptText);
+                          setTimeout(() => chatInputRef.current?.focus(), 50);
+                        }}
+                        className="p-3 rounded-lg border border-[#E4E7EC] bg-white hover:bg-[#F8F9FA] hover:border-[#315E9E]/40 text-xs text-[#344054] transition cursor-pointer text-left"
+                      >
+                        {promptText}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                /* Render Chat Message Thread */
+                chatMessages.map((msg, idx) => {
+                  const isUser = msg.role === 'user';
+                  const recs = msg.recommendations || [];
+
+                  return (
+                    <div
+                      key={msg.messageId || idx}
+                      className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
+                    >
+                      <div
+                        className={`max-w-[85%] rounded-xl p-4 text-sm leading-relaxed ${
+                          isUser
+                            ? 'bg-[#EFF4FA] text-[#202124] border border-[#D0DCEB]'
+                            : 'bg-white text-[#202124] border border-[#E4E7EC] shadow-xs'
+                        }`}
+                      >
+                        {/* Assistant label */}
+                        {!isUser && (
+                          <div className="flex items-center gap-1.5 text-xs font-semibold text-[#315E9E] mb-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-[#315E9E]" />
+                            <span>Mentor Connect Advisor</span>
+                          </div>
+                        )}
+                        <p className="whitespace-pre-line">{msg.content}</p>
+                      </div>
+
+                      {/* Display inline recommendation preview if on mobile */}
+                      {!isUser && recs.length > 0 && (
+                        <div className="w-full mt-3 block lg:hidden">
+                          <span className="text-xs font-bold text-[#667085] block mb-2">
+                            Recommended Mentors ({recs.length}):
+                          </span>
+                          <div className="space-y-3">
+                            {recs.map((rec) => (
+                              <MentorRecommendationCard
+                                key={rec.mentorId}
+                                mentor={rec}
+                                onBook={() => handleOpenBooking(rec)}
+                                isExpanded={expandedMentors[rec.mentorId]}
+                                onToggleExpand={() => toggleMentorExpand(rec.mentorId)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
               )}
 
-              <button
-                onClick={handleNewChat}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#142017] hover:bg-[#1C2F20] text-[#FFCB3D] border border-[#557945]/40 text-xs sm:text-sm font-semibold transition shadow-sm cursor-pointer"
-                title="Start a new career advising session"
-              >
-                <Plus className="w-4 h-4" />
-                <span>New Session</span>
-              </button>
+              {isSending && (
+                <div className="flex items-center gap-3 p-4 max-w-md bg-white border border-[#E4E7EC] rounded-xl text-sm text-[#667085] shadow-xs">
+                  <div className="w-4 h-4 border-2 border-[#D0D5DD] border-t-[#315E9E] rounded-full animate-spin shrink-0" />
+                  <span>Evaluating verified mentor profiles &amp; calculating match criteria...</span>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
             </div>
-          </div>
 
-          {/* Messages */}
-          <div className="flex-1 p-6 sm:p-8 overflow-y-auto space-y-6">
-            {chatMessages.length === 0 && (
-              <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[#A2B5A6]">
-                <div className="w-14 h-14 rounded-3xl bg-[#142017] border border-[#557945]/40 flex items-center justify-center text-[#FFCB3D] mb-4 shadow-lg">
-                  <Sparkles className="w-7 h-7" />
-                </div>
-                <h3 className="text-lg sm:text-xl font-bold text-[#F1F6F2] mb-2">How can our mentors help you today?</h3>
-                <p className="text-sm sm:text-base max-w-lg mb-8 text-[#8BA190] leading-relaxed">
-                  Describe your career goals, industry pivot, or technical challenges. The AI matching engine analyzes verified mentor profiles and presents the top 2–3 best-suited mentors for you to select and book a 1:1 consultation.
-                </p>
-                <div className="flex flex-wrap gap-3 justify-center max-w-xl">
-                  <button
-                    onClick={() => setInputQuery('I want a senior AI architect to guide me in machine learning and LLM applications.')}
-                    className="text-sm sm:text-base bg-[#142017] hover:bg-[#1C2F20] text-[#D0DDD2] hover:text-[#FFCB3D] px-4 py-2.5 rounded-2xl border border-[#557945]/30 transition shadow-sm"
-                  >
-                    AI Architecture &amp; LLMs &rarr;
-                  </button>
-                  <button
-                    onClick={() => setInputQuery('Looking for guidance from an experienced founder on seed fundraising.')}
-                    className="text-sm sm:text-base bg-[#142017] hover:bg-[#1C2F20] text-[#D0DDD2] hover:text-[#FFCB3D] px-4 py-2.5 rounded-2xl border border-[#557945]/30 transition shadow-sm"
-                  >
-                    Seed Fundraising &rarr;
-                  </button>
-                  <button
-                    onClick={() => setInputQuery('Looking for a product management mentor experienced in AI SaaS products.')}
-                    className="text-sm sm:text-base bg-[#142017] hover:bg-[#1C2F20] text-[#D0DDD2] hover:text-[#FFCB3D] px-4 py-2.5 rounded-2xl border border-[#557945]/30 transition shadow-sm"
-                  >
-                    AI Product Management &rarr;
-                  </button>
-                </div>
+            {/* Fixed Bottom Input Area */}
+            <form
+              onSubmit={handleSendMessage}
+              className="p-4 bg-white border-t border-[#E4E7EC] flex gap-3 items-end"
+            >
+              <div className="flex-1 relative">
+                <textarea
+                  ref={chatInputRef}
+                  rows={2}
+                  value={inputQuery}
+                  onChange={(e) => setInputQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                  placeholder="Ask a question or specify target career goals..."
+                  className="w-full p-3 text-sm bg-white border border-[#D0D5DD] rounded-lg text-[#202124] placeholder-[#98A2B3] focus:outline-none focus:border-[#315E9E] focus:ring-2 focus:ring-[#315E9E]/15 resize-none transition"
+                />
+                <span className="hidden sm:block text-[11px] text-[#98A2B3] absolute right-3 bottom-2">
+                  Press Enter to send, Shift+Enter for new line
+                </span>
               </div>
-            )}
 
-            {chatMessages.map((msg) => (
-              <div
-                key={msg.messageId}
-                className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+              <button
+                type="submit"
+                disabled={isSending || !inputQuery.trim()}
+                className="h-11 px-5 bg-[#315E9E] hover:bg-[#26497B] text-white rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition disabled:opacity-40 cursor-pointer shadow-xs shrink-0"
               >
-                <div
-                  className={`rounded-3xl p-5 sm:p-6 text-base sm:text-[17px] leading-relaxed shadow-lg ${
-                    msg.role === 'user'
-                      ? 'max-w-[85%] rounded-br-md bg-gradient-to-r from-[#213824] to-[#2E4F32] text-[#F1F6F2] border border-[#557945]/50'
-                      : 'max-w-[92%] sm:max-w-[88%] rounded-bl-md glass-panel-elevated text-[#F1F6F2] border border-[#557945]/35 space-y-5'
-                  }`}
-                >
-                  <p className="text-base sm:text-[17px] text-[#F1F6F2] font-normal leading-relaxed">{msg.content}</p>
-
-                  {/* LLM Suggested Mentors (2-3 Structured Results) */}
-                  {msg.recommendations && msg.recommendations.length > 0 && (
-                    <div className="mt-6 space-y-5 pt-5 border-t border-[#557945]/30">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-bold text-[#FFCB3D] uppercase tracking-wider flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 text-[#FFCB3D]" />
-                          Top Mentor Matches ({msg.recommendations.length} Options)
-                        </span>
-                        <span className="text-xs sm:text-sm text-[#8BA190]">Compare and select a mentor below</span>
-                      </div>
-
-                      <div className="space-y-5">
-                        {msg.recommendations.map((rec) => {
-                          const matchPct = rec.matchPercentage ?? (rec.compositeScore ? Math.round(rec.compositeScore * 100) : 88);
-                          return (
-                            <div
-                              key={rec.mentorId}
-                              className="p-5 sm:p-6 bg-[#0B130D]/95 border border-[#557945]/40 rounded-3xl space-y-4 hover:border-[#FFCB3D]/60 transition-all duration-200 shadow-xl"
-                            >
-                              {/* Teacher Profile Header */}
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                <div className="flex items-center gap-4">
-                                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#1C2F20] to-[#2E4F32] border border-[#557945]/60 flex items-center justify-center text-xl font-extrabold text-[#FFCB3D] shadow-inner shrink-0">
-                                    {rec.name?.charAt(0) || 'M'}
-                                  </div>
-                                  <div>
-                                    <div className="flex items-center gap-2.5">
-                                      <h4 className="font-extrabold text-[#F1F6F2] text-lg sm:text-xl tracking-tight">
-                                        {rec.name}
-                                      </h4>
-                                      <span className="text-xs font-mono font-bold text-[#8BA190] bg-[#142017] px-2.5 py-1 rounded-lg border border-[#557945]/30">
-                                        {rec.mentorId}
-                                      </span>
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-2 text-sm text-[#A2B5A6] mt-1">
-                                      <span className="text-[#84CC78] font-bold">{rec.seniority || 'Senior Specialist'}</span>
-                                      <span>•</span>
-                                      <span className="text-[#F1F6F2] font-semibold">{rec.company || 'Tech Leader'}</span>
-                                      <span>•</span>
-                                      <span className="text-[#8BA190]">{rec.city || 'Global'}</span>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center gap-2 self-start sm:self-auto">
-                                  <span className="text-sm sm:text-base font-mono font-bold bg-[#5D9253]/25 text-[#84CC78] border border-[#5D9253]/50 px-4 py-1.5 rounded-full shadow-sm flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-[#84CC78] animate-pulse" />
-                                    {matchPct}% Match
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Domain & Sectors */}
-                              <div className="flex flex-wrap items-center gap-2 pt-1">
-                                <span className="px-3.5 py-1.5 rounded-xl bg-[#FFCB3D]/15 text-[#FFCB3D] border border-[#FFCB3D]/35 text-xs sm:text-sm font-bold">
-                                  {rec.domain}
-                                </span>
-                                {Array.isArray(rec.sectorsOfExpertise) && rec.sectorsOfExpertise.slice(0, 3).map((sec, i) => (
-                                  <span key={i} className="px-3.5 py-1.5 rounded-xl bg-[#142017] text-[#D0DDD2] border border-[#557945]/30 text-xs sm:text-sm font-medium">
-                                    {sec}
-                                  </span>
-                                ))}
-                              </div>
-
-                              {/* Match Reason */}
-                              <div className="p-4 sm:p-5 bg-[#080D09]/80 rounded-2xl border border-[#557945]/25 space-y-2.5">
-                                <div className="text-xs sm:text-sm font-bold text-[#84CC78] uppercase tracking-wider">
-                                  Why Matched For You
-                                </div>
-                                <p className="text-sm sm:text-base text-[#F1F6F2] leading-relaxed font-normal">
-                                  {rec.matchReason}
-                                </p>
-                                {rec.relevantExperience && (
-                                  <p className="text-sm text-[#D0DDD2] pt-2.5 border-t border-[#557945]/20 leading-relaxed">
-                                    <span className="font-semibold text-[#A2B5A6]">Verified Background: </span>
-                                    {rec.relevantExperience}
-                                  </p>
-                                )}
-                              </div>
-
-                              {/* Action CTA */}
-                              <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-[#557945]/25">
-                                <span className="text-xs sm:text-sm text-[#8BA190]">
-                                  Google Calendar session + Meet invitation created upon slot selection
-                                </span>
-                                <button
-                                  onClick={() => handleOpenBooking(rec)}
-                                  className="flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-[#FFCB3D] via-[#F1A344] to-[#FFCB3D] text-[#090E0A] text-sm sm:text-base font-bold transition hover:brightness-105 shadow-md cursor-pointer ml-auto"
-                                >
-                                  <Calendar className="w-4 h-4 text-[#090E0A]" />
-                                  <span>Select Mentor &amp; Book</span>
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-
-            {/* In-Flight Matching Indicator */}
-            {isSending && (
-              <div className="flex items-start gap-3 animate-in fade-in duration-200">
-                <div className="w-12 h-12 rounded-2xl bg-[#142017] border border-[#557945]/40 flex items-center justify-center text-[#FFCB3D] shadow-sm animate-pulse">
-                  <Sparkles className="w-6 h-6" />
-                </div>
-                <div className="glass-panel-elevated px-5 py-4 rounded-3xl rounded-bl-sm border border-[#557945]/35 text-sm sm:text-base text-[#84CC78] flex items-center gap-2.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#84CC78] animate-ping" />
-                  <span>Analyzing candidate mentor profiles &amp; calculating match alignment...</span>
-                </div>
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
+                <span>Send</span>
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
           </div>
 
-          {errorMsg && (
-            <div className="px-6 py-3 bg-rose-500/10 border-t border-rose-500/20 text-rose-300 text-sm">
-              {errorMsg}
+          {/* PANEL 3: CONTEXTUAL RECOMMENDATIONS PANEL (DESKTOP RIGHT SIDE) */}
+          {latestRecs.length > 0 && (
+            <div className="hidden lg:flex flex-col w-[380px] shrink-0 bg-white rounded-xl border border-[#E4E7EC] shadow-xs p-4 overflow-y-auto max-h-[780px]">
+              <div className="flex items-center justify-between pb-3 border-b border-[#E4E7EC] mb-4">
+                <div>
+                  <h3 className="text-sm font-bold text-[#202124]">
+                    Top Matched Mentors ({latestRecs.length})
+                  </h3>
+                  <span className="text-[11px] text-[#667085]">
+                    Filtered by 100-point rubric (&ge; 50% threshold)
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {latestRecs.map((mentor) => (
+                  <MentorRecommendationCard
+                    key={mentor.mentorId}
+                    mentor={mentor}
+                    onBook={() => handleOpenBooking(mentor)}
+                    isExpanded={expandedMentors[mentor.mentorId]}
+                    onToggleExpand={() => toggleMentorExpand(mentor.mentorId)}
+                  />
+                ))}
+              </div>
             </div>
           )}
-
-          {/* Input Form */}
-          <form onSubmit={handleSendMessage} className="p-4 sm:p-5 bg-[#0E1610]/95 border-t border-[#557945]/30 flex gap-3.5 items-center backdrop-blur-md">
-            <input
-              type="text"
-              value={inputQuery}
-              onChange={(e) => setInputQuery(e.target.value)}
-              placeholder="Describe your career goal or ask for a specific mentor specialization..."
-              className="flex-1 glass-input rounded-2xl px-5 py-4 text-base sm:text-[17px] text-[#F1F6F2] placeholder-[#557945] focus:outline-none"
-            />
-            <button
-              type="submit"
-              disabled={isSending || !inputQuery.trim()}
-              className="px-6 sm:px-7 py-4 bg-gradient-to-r from-[#FFCB3D] via-[#F1A344] to-[#FFCB3D] hover:brightness-105 disabled:opacity-40 text-[#090E0A] rounded-2xl text-sm sm:text-base font-bold flex items-center gap-2 transition shadow-lg cursor-pointer shrink-0"
-            >
-              <span>{isSending ? 'Matching...' : 'Ask Advisor'}</span>
-              <Send className="w-4 h-4" />
-            </button>
-          </form>
         </div>
       )}
 
-      {/* Tab 2: Scheduled Bookings */}
+      {/* ========================================================================= */}
+      {/* TAB 2: MY BOOKINGS TAB */}
+      {/* ========================================================================= */}
       {activeTab === 'bookings' && (
-        <div className="glass-panel rounded-2xl p-6 shadow-xl border border-[#557945]/30">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-bold text-[#F1F6F2]">My Scheduled Sessions</h2>
-            <span className="text-xs font-mono font-bold text-[#FFCB3D] bg-[#0E1610] px-2.5 py-1 rounded-lg border border-[#557945]/30">
-              {bookings.length} Bookings
-            </span>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-[#202124]">My Mentorship Sessions</h2>
+              <p className="text-sm text-[#667085]">Review and prepare for your upcoming sessions</p>
+            </div>
           </div>
 
           {bookings.length === 0 ? (
-            <div className="text-center py-12 text-[#8BA190] text-xs border border-dashed border-[#557945]/30 rounded-2xl p-6">
-              No sessions booked yet. Ask the AI advisor above to receive mentor recommendations.
+            <div className="bg-white rounded-xl border border-[#E4E7EC] p-12 text-center shadow-xs">
+              <Calendar className="w-12 h-12 text-[#98A2B3] mx-auto mb-3" />
+              <h3 className="text-base font-semibold text-[#202124]">No bookings scheduled</h3>
+              <p className="text-sm text-[#667085] mt-1 max-w-sm mx-auto">
+                Ask the AI Career Advisor for recommendations and book a 1-on-1 consultation slot.
+              </p>
+              <button
+                onClick={() => setActiveTab('chat')}
+                className="mt-4 px-4 py-2 bg-[#315E9E] hover:bg-[#26497B] text-white text-xs font-semibold rounded-lg transition cursor-pointer"
+              >
+                Go to Advisor
+              </button>
             </div>
           ) : (
-            <div className="space-y-3">
-              {bookings.map((booking) => {
-                const isUpcoming = booking.status === 'confirmed' || booking.status === 'upcoming';
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {bookings.map((b) => {
+                const isCancelled = b.status === 'cancelled';
+                const isCompleted = b.status === 'completed';
+
                 return (
                   <div
-                    key={booking.bookingId}
-                    className="p-4 glass-card rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3"
+                    key={b.bookingId}
+                    className={`bg-white rounded-xl border p-5 shadow-xs transition space-y-3 ${
+                      isCancelled ? 'border-rose-200 bg-rose-50/20 opacity-80' : 'border-[#E4E7EC]'
+                    }`}
                   >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-[#F1F6F2]">{booking.mentorName}</span>
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                            isUpcoming
-                              ? 'bg-[#5D9253]/20 text-[#84CC78] border-[#5D9253]/40'
-                              : booking.status === 'completed'
-                              ? 'bg-[#FFCB3D]/15 text-[#FFCB3D] border-[#FFCB3D]/30'
-                              : 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-                          }`}
-                        >
-                          {booking.status}
-                        </span>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="text-base font-bold text-[#202124]">{b.mentorName}</h4>
+                        <span className="text-xs text-[#667085] font-mono">ID: {b.mentorId}</span>
                       </div>
-                      <p className="text-xs text-[#D0DDD2]">{booking.topic}</p>
-                      <div className="flex items-center gap-3 text-[11px] text-[#A2B5A6]">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-[#FFCB3D]" />
-                          {new Date(booking.slotStart).toUTCString()}
-                        </span>
-                        <span>&bull;</span>
-                        <span>{booking.durationMinutes} min</span>
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
+                          isCancelled
+                            ? 'bg-rose-50 text-[#D92D20] border border-rose-200'
+                            : isCompleted
+                            ? 'bg-gray-100 text-[#344054] border border-gray-200'
+                            : b.status === 'pending'
+                            ? 'bg-amber-50 text-[#B54708] border border-amber-200'
+                            : 'bg-emerald-50 text-[#027A48] border border-emerald-200'
+                        }`}
+                      >
+                        {b.status === 'pending' ? 'Pending Approval' : b.status}
+                      </span>
+                    </div>
+
+                    <div className="text-xs text-[#344054] space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-3.5 h-3.5 text-[#667085]" />
+                        <span>{new Date(b.slotStart).toLocaleString()} (UTC)</span>
+                      </div>
+                      <div className="text-[#667085]">
+                        <span className="font-semibold text-[#344054]">Topic: </span>
+                        {b.topic || 'Mentorship consultation'}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      {booking.meetingLink && isUpcoming && (
+                    <div className="pt-3 border-t border-[#E4E7EC] flex items-center justify-between">
+                      {b.status === 'pending' ? (
+                        <span className="text-xs text-[#B54708] bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200 font-medium">
+                          Awaiting Admin Approval
+                        </span>
+                      ) : b.meetingLink && !isCancelled ? (
                         <a
-                          href={booking.meetingLink}
+                          href={b.meetingLink}
                           target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#5D9253] hover:bg-[#5D9253]/90 text-[#090E0A] text-xs font-bold rounded-xl transition shadow-sm"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#315E9E] hover:bg-[#26497B] text-white text-xs font-semibold rounded-lg transition"
                         >
                           <Video className="w-3.5 h-3.5" />
-                          <span>Join Meet</span>
-                          <ExternalLink className="w-3 h-3 ml-0.5" />
+                          <span>Join Google Meet</span>
                         </a>
+                      ) : (
+                        <span className="text-xs text-[#98A2B3]">No active link</span>
                       )}
 
-                      {isUpcoming && (
+                      {!isCancelled && !isCompleted && (
                         <button
-                          onClick={() => handleCancelBooking(booking.bookingId)}
-                          className="px-3 py-1.5 bg-[#142017] hover:bg-rose-500/20 text-[#A2B5A6] hover:text-rose-400 border border-[#557945]/30 text-xs font-medium rounded-xl transition"
+                          onClick={() => handleCancelBooking(b.bookingId)}
+                          className="text-xs text-[#D92D20] hover:underline cursor-pointer"
                         >
-                          Cancel
+                          Cancel Session
                         </button>
                       )}
                     </div>
@@ -625,222 +870,273 @@ export default function StudentDashboard() {
         </div>
       )}
 
-      {/* Tab 3: Profile Settings with Editable Email */}
+      {/* ========================================================================= */}
+      {/* TAB 3: ACCOUNT & PROFILE SETTINGS */}
+      {/* ========================================================================= */}
       {activeTab === 'profile' && (
-        <div className="max-w-xl mx-auto glass-panel rounded-2xl p-6 shadow-xl border border-[#557945]/30">
-          <h2 className="text-base font-bold text-[#F1F6F2] mb-1">Profile &amp; Email Settings</h2>
-          <p className="text-xs text-[#A2B5A6] mb-6">Update your email address to receive meeting confirmations</p>
+        <div className="max-w-xl mx-auto bg-white rounded-xl border border-[#E4E7EC] p-6 shadow-xs">
+          <h2 className="text-lg font-bold text-[#202124] mb-1">Student Account Settings</h2>
+          <p className="text-xs text-[#667085] mb-5">
+            Update your profile and active email address to receive Google Calendar invites.
+          </p>
 
           {profileSaved && (
-            <div className="mb-4 p-3 bg-[#5D9253]/15 border border-[#5D9253]/35 text-[#84CC78] text-xs rounded-xl font-medium flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[#5D9253]" />
-              <span>Profile updated successfully</span>
+            <div className="mb-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-[#027A48] text-xs font-medium flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-[#12B76A]" />
+              <span>Profile settings successfully saved!</span>
             </div>
           )}
 
           {profileError && (
-            <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs rounded-xl">
+            <div className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-[#D92D20] text-xs font-medium">
               {profileError}
             </div>
           )}
 
           <form onSubmit={handleSaveProfile} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-[#D0DDD2] mb-1.5 flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-[#FFCB3D]" />
-                <span>Student Email Address (for meeting invitations)</span>
+              <label className="block text-xs font-semibold text-[#344054] mb-1.5">Full Name</label>
+              <input
+                type="text"
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-white border border-[#D0D5DD] rounded-lg text-[#202124] focus:outline-none focus:border-[#315E9E]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-[#344054] mb-1.5">
+                Email Address (Receives Google Calendar Invites)
               </label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@domain.com"
-                className="w-full px-3.5 py-2.5 glass-input rounded-xl text-xs text-[#F1F6F2] focus:outline-none"
+                className="w-full px-3 py-2 text-sm bg-white border border-[#D0D5DD] rounded-lg text-[#202124] focus:outline-none focus:border-[#315E9E]"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-[#D0DDD2] mb-1.5">Full Name</label>
-              <input
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="w-full px-3.5 py-2.5 glass-input rounded-xl text-xs text-[#F1F6F2] focus:outline-none"
-              />
-            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-[#344054] mb-1.5">Target Domain</label>
+                <select
+                  value={targetDomain}
+                  onChange={(e) => setTargetDomain(e.target.value)}
+                  className="w-full px-3 py-2 text-sm bg-white border border-[#D0D5DD] rounded-lg text-[#202124] focus:outline-none focus:border-[#315E9E]"
+                >
+                  <option value="Artificial Intelligence">Artificial Intelligence</option>
+                  <option value="Product Management">Product Management</option>
+                  <option value="Software Engineering">Software Engineering</option>
+                  <option value="Data Science & Analytics">Data Science & Analytics</option>
+                  <option value="Venture Capital & Startups">Venture Capital & Startups</option>
+                </select>
+              </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-[#D0DDD2] mb-1.5">Domain Interest</label>
-              <select
-                value={targetDomain}
-                onChange={(e) => setTargetDomain(e.target.value)}
-                className="w-full px-3.5 py-2.5 glass-input rounded-xl text-xs text-[#F1F6F2] focus:outline-none"
-              >
-                <option value="Artificial Intelligence" className="bg-[#0E1610]">Artificial Intelligence</option>
-                <option value="Product Management" className="bg-[#0E1610]">Product Management</option>
-                <option value="Software Engineering" className="bg-[#0E1610]">Software Engineering</option>
-                <option value="Data Science & Analytics" className="bg-[#0E1610]">Data Science & Analytics</option>
-                <option value="Venture Capital & Startups" className="bg-[#0E1610]">Venture Capital & Startups</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-[#D0DDD2] mb-1.5">Education Level</label>
-              <select
-                value={educationLevel}
-                onChange={(e) => setEducationLevel(e.target.value)}
-                className="w-full px-3.5 py-2.5 glass-input rounded-xl text-xs text-[#F1F6F2] focus:outline-none"
-              >
-                <option value="Undergraduate" className="bg-[#0E1610]">Undergraduate</option>
-                <option value="Postgraduate" className="bg-[#0E1610]">Postgraduate</option>
-                <option value="Early Professional" className="bg-[#0E1610]">Early Professional</option>
-                <option value="Career Switcher" className="bg-[#0E1610]">Career Switcher</option>
-              </select>
+              <div>
+                <label className="block text-xs font-semibold text-[#344054] mb-1.5">Education Level</label>
+                <select
+                  value={educationLevel}
+                  onChange={(e) => setEducationLevel(e.target.value)}
+                  className="w-full px-3 py-2 text-sm bg-white border border-[#D0D5DD] rounded-lg text-[#202124] focus:outline-none focus:border-[#315E9E]"
+                >
+                  <option value="Undergraduate">Undergraduate</option>
+                  <option value="Postgraduate">Postgraduate</option>
+                  <option value="Early Professional">Early Professional</option>
+                  <option value="Career Switcher">Career Switcher</option>
+                </select>
+              </div>
             </div>
 
             <button
               type="submit"
-              className="w-full mt-2 py-2.5 px-4 rounded-xl text-xs font-bold text-[#090E0A] bg-gradient-to-r from-[#FFCB3D] via-[#F1A344] to-[#FFCB3D] hover:brightness-105 shadow-sm transition cursor-pointer"
+              className="w-full py-2.5 px-4 bg-[#315E9E] hover:bg-[#26497B] text-white font-semibold rounded-lg text-sm transition cursor-pointer shadow-xs"
             >
-              Save Changes
+              Save Profile Changes
             </button>
           </form>
         </div>
       )}
 
-      {/* Booking Slot Modal: Clearly shows both Available and Booked Slots */}
+      {/* ========================================================================= */}
+      {/* RENAME CONVERSATION MODAL */}
+      {/* ========================================================================= */}
+      {renamingConvId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-xl border border-[#E4E7EC] p-5 max-w-sm w-full shadow-lg space-y-4">
+            <h3 className="text-base font-bold text-[#202124]">Rename Conversation</h3>
+            <form onSubmit={handleSaveRename} className="space-y-3">
+              <input
+                type="text"
+                required
+                maxLength={60}
+                value={newTitleInput}
+                onChange={(e) => setNewTitleInput(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-white border border-[#D0D5DD] rounded-lg text-[#202124] focus:outline-none focus:border-[#315E9E]"
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRenamingConvId(null)}
+                  className="px-3 py-1.5 text-xs font-medium text-[#667085] hover:bg-[#F2F4F7] rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 text-xs font-semibold bg-[#315E9E] hover:bg-[#26497B] text-white rounded-lg"
+                >
+                  Save Title
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* BOOKING MODAL WITH FIX FOR SLOT SELECTION BUG (PHASE 4) */}
+      {/* ========================================================================= */}
       {bookingModalMentor && (
-        <div className="fixed inset-0 z-50 bg-[#090E0A]/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="glass-panel-elevated rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#557945]/40 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-start justify-between pb-3 border-b border-[#557945]/25">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-xl border border-[#E4E7EC] p-6 max-w-md w-full shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between pb-3 border-b border-[#E4E7EC]">
               <div>
-                <span className="text-[10px] font-bold text-[#5D9253] uppercase block">
-                  Book Session
+                <span className="text-[11px] font-bold text-[#315E9E] uppercase tracking-wider block">
+                  Schedule Mentorship Consultation
                 </span>
-                <h3 className="text-base font-bold text-[#F1F6F2]">
-                  {bookingModalMentor.name}
-                </h3>
-                <span className="text-xs text-[#A2B5A6]">{bookingModalMentor.domain}</span>
+                <h3 className="text-lg font-bold text-[#202124]">{bookingModalMentor.name}</h3>
+                <span className="text-xs text-[#667085]">
+                  {bookingModalMentor.company} &bull; {bookingModalMentor.domain}
+                </span>
               </div>
               <button
                 onClick={() => setBookingModalMentor(null)}
-                className="text-[#8BA190] hover:text-[#F1F6F2] p-1 rounded-lg"
+                className="p-1 rounded-lg text-[#667085] hover:text-[#202124] hover:bg-[#F2F4F7]"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {bookingSuccess ? (
-              <div className="py-6 text-center space-y-4">
-                <div className="w-12 h-12 rounded-full bg-[#5D9253]/20 border border-[#5D9253]/40 flex items-center justify-center mx-auto">
-                  <Check className="w-6 h-6 text-[#84CC78]" />
+              <div className="py-6 text-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto text-[#B54708]">
+                  <Clock className="w-6 h-6 text-[#B54708]" />
                 </div>
-                <div>
-                  <h4 className="text-sm font-bold text-[#F1F6F2]">Session Booked</h4>
-                  <p className="text-xs text-[#A2B5A6] mt-1">
-                    Google Calendar event created. Notifications sent to both emails.
-                  </p>
+                <h4 className="text-base font-bold text-[#202124]">Booking Request Submitted!</h4>
+                <div className="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-[#B54708] border border-amber-200">
+                  Pending Admin Approval
                 </div>
-
-                {bookingSuccess.meetingLink && (
-                  <div className="p-3 bg-[#0E1610] rounded-xl border border-[#557945]/30">
-                    <span className="text-[10px] text-[#8BA190] block mb-1">Meet Link:</span>
-                    <a
-                      href={bookingSuccess.meetingLink}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs font-mono text-[#FFCB3D] hover:underline break-all"
-                    >
-                      {bookingSuccess.meetingLink}
-                    </a>
+                <p className="text-xs text-[#667085] max-w-sm mx-auto">
+                  Your session request for {new Date(bookingSuccess.slotStart).toLocaleString()} (UTC) has been submitted and is currently in <strong>Pending Approval</strong> mode.
+                  The platform administrator will review and approve your session. You will receive an email confirmation once approved.
+                </p>
+                <div className="pt-3">
+                  <button
+                    onClick={() => {
+                      setBookingModalMentor(null);
+                      setActiveTab('bookings');
+                    }}
+                    className="px-4 py-2 bg-[#315E9E] text-white text-xs font-semibold rounded-lg hover:bg-[#26497B] shadow-xs cursor-pointer"
+                  >
+                    View in My Bookings
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {bookingConflictError && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 text-[#D92D20] text-xs rounded-lg flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{bookingConflictError}</span>
                   </div>
                 )}
 
-                <button
-                  onClick={() => {
-                    setBookingModalMentor(null);
-                    setSearchParams({ tab: 'bookings' });
-                  }}
-                  className="px-4 py-2 bg-gradient-to-r from-[#FFCB3D] to-[#F1A344] text-[#090E0A] font-bold text-xs rounded-xl transition"
-                >
-                  View in My Bookings
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-4 py-4 text-xs">
                 <div>
-                  <label className="block text-xs font-semibold text-[#D0DDD2] mb-1.5">Select Date</label>
+                  <label className="block text-xs font-semibold text-[#344054] mb-1">
+                    Select Consultation Date
+                  </label>
                   <input
                     type="date"
                     value={bookingDate}
                     min={new Date().toISOString().split('T')[0]}
-                    onChange={(e) => {
-                      setBookingDate(e.target.value);
-                      fetchSlotsForDate(bookingModalMentor.mentorId, e.target.value);
-                    }}
-                    className="w-full px-3.5 py-2 glass-input rounded-xl text-xs text-[#F1F6F2] focus:outline-none"
+                    onChange={handleDateChange}
+                    className="w-full px-3 py-2 text-sm bg-white border border-[#D0D5DD] rounded-lg text-[#202124] focus:outline-none focus:border-[#315E9E]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#D0DDD2] mb-1.5">Topic</label>
+                  <label className="block text-xs font-semibold text-[#344054] mb-1">Topic / Goals</label>
                   <input
                     type="text"
                     value={bookingTopic}
                     onChange={(e) => setBookingTopic(e.target.value)}
-                    placeholder="Discussion topic"
-                    className="w-full px-3.5 py-2 glass-input rounded-xl text-xs text-[#F1F6F2] focus:outline-none"
+                    placeholder="E.g. Transitioning from engineering to product management"
+                    className="w-full px-3 py-2 text-sm bg-white border border-[#D0D5DD] rounded-lg text-[#202124] focus:outline-none focus:border-[#315E9E]"
                   />
                 </div>
 
+                {/* Available vs Booked Slots Grid */}
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-semibold text-[#D0DDD2]">Time Slots (30 min)</label>
-                    <span className="text-[10px] text-[#8BA190]">Shows available and booked slots</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-semibold text-[#344054]">
+                      Available Time Slots (30 min)
+                    </label>
+                    <span className="text-[11px] text-[#667085]">Times shown in UTC</span>
                   </div>
 
                   {loadingSlots ? (
-                    <div className="text-center py-6 text-xs text-[#8BA190] animate-pulse">
-                      Checking availability...
+                    <div className="text-center py-6 text-xs text-[#667085] animate-pulse">
+                      Checking real-time slot availability...
                     </div>
                   ) : rawSlots.length === 0 ? (
-                    <div className="text-center py-6 text-xs text-[#8BA190] border border-dashed border-[#557945]/30 rounded-xl">
-                      No slots found for this date.
+                    <div className="text-center py-6 text-xs text-[#667085] border border-dashed border-[#D0D5DD] rounded-lg">
+                      No slots available for this date.
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1">
                       {rawSlots.map((slot, idx) => {
                         const isAvailable = slot.isAvailable !== false;
-                        const startLabel = formatSlotTime(slot.slotStart || slot.start);
-                        const isSelected = selectedSlot && (selectedSlot.slotStart === slot.slotStart || selectedSlot.start === slot.start);
+                        const startLabel = formatSlotTime(slot.slotStart);
+                        // Strict single-slot comparison fix (no undefined === undefined bug!)
+                        const isSelected = Boolean(
+                          selectedSlot &&
+                          selectedSlot.slotStart &&
+                          slot.slotStart &&
+                          selectedSlot.slotStart === slot.slotStart
+                        );
 
                         if (!isAvailable) {
                           return (
                             <div
-                              key={idx}
-                              className="p-2 rounded-xl border border-rose-500/20 bg-rose-500/5 text-rose-300/60 text-[11px] font-mono flex items-center justify-between cursor-not-allowed opacity-60"
-                              title="This slot is already booked"
+                              key={slot.slotStart || idx}
+                              className="p-2.5 rounded-lg border border-[#E4E7EC] bg-[#F8F9FA] text-[#98A2B3] text-xs font-mono flex items-center justify-between cursor-not-allowed select-none"
+                              title="This time slot is already booked"
                             >
                               <span>{startLabel}</span>
-                              <span className="text-[9px] uppercase font-bold text-rose-400">Booked</span>
+                              <span className="text-[10px] uppercase font-bold text-[#D92D20]">
+                                Booked
+                              </span>
                             </div>
                           );
                         }
 
                         return (
                           <button
-                            key={idx}
+                            key={slot.slotStart || idx}
                             type="button"
-                            onClick={() => setSelectedSlot(slot)}
-                            className={`p-2 rounded-xl border text-[11px] font-mono font-medium flex items-center justify-between transition ${
+                            onClick={() => handleSelectSlot(slot)}
+                            className={`p-2.5 rounded-lg border text-xs font-mono font-medium flex items-center justify-between transition cursor-pointer ${
                               isSelected
-                                ? 'bg-[#5D9253]/30 border-[#5D9253] text-[#FFCB3D] shadow-sm'
-                                : 'bg-[#142017] border-[#557945]/30 text-[#D0DDD2] hover:bg-[#1C2F20]'
+                                ? 'bg-[#EFF4FA] border-[#315E9E] text-[#315E9E] font-bold ring-2 ring-[#315E9E]/20 shadow-xs'
+                                : 'bg-white border-[#D0D5DD] text-[#344054] hover:bg-[#F8F9FA]'
                             }`}
                           >
                             <span>{startLabel}</span>
-                            <span className="text-[9px] uppercase font-bold text-[#84CC78]">Available</span>
+                            <span className="text-[10px] uppercase font-bold text-[#12B76A]">
+                              Available
+                            </span>
                           </button>
                         );
                       })}
@@ -848,11 +1144,22 @@ export default function StudentDashboard() {
                   )}
                 </div>
 
-                <div className="pt-3 border-t border-[#557945]/20 flex justify-end gap-2">
+                {/* Selected Slot Confirmation Summary */}
+                {selectedSlot && (
+                  <div className="p-3 bg-[#EFF4FA] border border-[#D0DCEB] rounded-lg text-xs space-y-1">
+                    <div className="font-semibold text-[#315E9E] flex items-center gap-1.5">
+                      <Check className="w-3.5 h-3.5 text-[#315E9E]" />
+                      <span>Selected Slot: {formatSlotTime(selectedSlot.slotStart)} on {bookingDate}</span>
+                    </div>
+                    <span className="text-[#667085] block">Duration: 30 minutes consultation</span>
+                  </div>
+                )}
+
+                <div className="pt-3 border-t border-[#E4E7EC] flex justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => setBookingModalMentor(null)}
-                    className="px-4 py-2 bg-[#142017] text-[#A2B5A6] rounded-xl text-xs font-medium hover:text-[#F1F6F2]"
+                    className="px-4 py-2 text-xs font-medium text-[#667085] hover:bg-[#F2F4F7] rounded-lg"
                   >
                     Cancel
                   </button>
@@ -860,9 +1167,9 @@ export default function StudentDashboard() {
                     type="button"
                     onClick={handleConfirmBooking}
                     disabled={isBooking || !selectedSlot}
-                    className="px-5 py-2 bg-gradient-to-r from-[#FFCB3D] via-[#F1A344] to-[#FFCB3D] text-[#090E0A] font-bold text-xs rounded-xl hover:brightness-105 disabled:opacity-40 transition shadow-sm"
+                    className="px-5 py-2 bg-[#315E9E] hover:bg-[#26497B] text-white font-semibold text-xs rounded-lg transition disabled:opacity-40 shadow-xs cursor-pointer"
                   >
-                    {isBooking ? 'Booking...' : 'Confirm'}
+                    {isBooking ? 'Confirming...' : 'Confirm Booking'}
                   </button>
                 </div>
               </div>
@@ -870,6 +1177,193 @@ export default function StudentDashboard() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// =============================================================================
+// SUB-COMPONENT: STRUCTURED MENTOR RECOMMENDATION CARD (PHASE 2)
+// =============================================================================
+function MentorRecommendationCard({ mentor, onBook, isExpanded, onToggleExpand }) {
+  const scoreBreakdown = mentor.scoreBreakdown || {};
+  const toolExperience = mentor.toolExperience || {};
+  const aiProfile = mentor.aiProfile || {};
+
+  return (
+    <div className="bg-white rounded-xl border border-[#E4E7EC] p-4 shadow-xs hover:border-[#315E9E]/40 transition space-y-3">
+      {/* Header with Name, Role, Location, Match % */}
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <div className="flex items-center gap-2">
+            <h4 className="text-sm font-bold text-[#202124]">{mentor.name}</h4>
+            <span className="text-[11px] font-mono text-[#98A2B3]">[{mentor.mentorId}]</span>
+          </div>
+          <span className="text-xs text-[#667085] font-medium block">
+            {mentor.company || 'Enterprise Leader'} &bull; {mentor.domain}
+          </span>
+          <div className="flex items-center gap-3 mt-1 text-[11px] text-[#667085]">
+            <span className="flex items-center gap-1">
+              <MapPin className="w-3 h-3 text-[#98A2B3]" />
+              {mentor.city || 'Global'}
+            </span>
+            <span className="flex items-center gap-1">
+              <Award className="w-3 h-3 text-[#98A2B3]" />
+              {mentor.seniority || 'Experienced'}
+            </span>
+          </div>
+        </div>
+
+        {/* Real Match Score Badge */}
+        <div className="text-right shrink-0">
+          <span className="inline-block px-2.5 py-1 bg-[#EFF4FA] border border-[#D0DCEB] text-[#315E9E] rounded-lg text-xs font-bold shadow-xs">
+            {mentor.matchPercentage || 75}% Match
+          </span>
+          <span className="block text-[10px] text-[#98A2B3] mt-0.5">100-pt Rubric</span>
+        </div>
+      </div>
+
+      {/* Why this mentor fits your goal */}
+      <div className="p-3 bg-[#F8F9FA] rounded-lg text-xs space-y-1">
+        <span className="font-semibold text-[#202124] block">Why this mentor fits your goal:</span>
+        <p className="text-[#344054] leading-relaxed">{mentor.matchReason}</p>
+      </div>
+
+      {/* Relevant Evidence */}
+      {mentor.relevantExperience && (
+        <div className="text-xs text-[#667085]">
+          <span className="font-semibold text-[#344054]">Relevant Evidence: </span>
+          <span>{mentor.relevantExperience}</span>
+        </div>
+      )}
+
+      {/* Expertise Chips */}
+      {mentor.rolesOfExpertise && mentor.rolesOfExpertise.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          {mentor.rolesOfExpertise.map((role, i) => (
+            <span
+              key={i}
+              className="px-2 py-0.5 bg-[#F2F4F7] text-[#344054] text-[11px] font-medium rounded-md"
+            >
+              {role}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Limitations / Potential Gap */}
+      {mentor.limitations && (
+        <div className="text-[11px] text-[#667085] flex items-start gap-1.5 bg-amber-50/50 p-2 rounded-md border border-amber-200/40">
+          <Info className="w-3.5 h-3.5 text-[#F79009] shrink-0 mt-0.5" />
+          <span>
+            <strong className="text-[#344054]">Potential Gap / Notes:</strong> {mentor.limitations}
+          </span>
+        </div>
+      )}
+
+      {/* Expandable Details Toggle */}
+      <button
+        type="button"
+        onClick={onToggleExpand}
+        className="w-full flex items-center justify-between pt-2 border-t border-[#E4E7EC] text-xs font-semibold text-[#315E9E] hover:text-[#26497B] cursor-pointer"
+      >
+        <span>{isExpanded ? 'Hide Detailed Profile' : 'View Full Profile Details'}</span>
+        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+      </button>
+
+      {/* Expanded Profile Details */}
+      {isExpanded && (
+        <div className="space-y-3 pt-2 text-xs border-t border-dashed border-[#E4E7EC]">
+          {/* 100-Point Rubric Breakdown */}
+          {scoreBreakdown && Object.keys(scoreBreakdown).length > 0 && (
+            <div className="space-y-1.5">
+              <span className="font-bold text-[#202124] block">Match Rubric Breakdown (out of 100):</span>
+              <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                <div className="p-1.5 bg-[#F8F9FA] rounded">
+                  Skill Relevance: <strong>{scoreBreakdown.expertiseSkillScore || 0}/40</strong>
+                </div>
+                <div className="p-1.5 bg-[#F8F9FA] rounded">
+                  Domain Alignment: <strong>{scoreBreakdown.domainAlignmentScore || 0}/25</strong>
+                </div>
+                <div className="p-1.5 bg-[#F8F9FA] rounded">
+                  Role &amp; Seniority: <strong>{scoreBreakdown.roleSeniorityScore || 0}/15</strong>
+                </div>
+                <div className="p-1.5 bg-[#F8F9FA] rounded">
+                  Mentorship Quality: <strong>{scoreBreakdown.mentorshipQualityScore || 0}/10</strong>
+                </div>
+                <div className="p-1.5 bg-[#F8F9FA] rounded col-span-2">
+                  Tool &amp; AI Capability: <strong>{scoreBreakdown.toolAiScore || 0}/10</strong>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* AI Subdomains & Tools */}
+          {aiProfile && (aiProfile.tools?.length > 0 || aiProfile.subdomains?.length > 0) && (
+            <div className="space-y-1">
+              <span className="font-semibold text-[#344054]">AI Tools &amp; Workflows:</span>
+              <div className="flex flex-wrap gap-1">
+                {(aiProfile.tools || []).map((t, idx) => (
+                  <span
+                    key={idx}
+                    className="px-2 py-0.5 bg-[#EFF4FA] text-[#315E9E] rounded text-[10px] font-mono"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Tool Experience Matrix */}
+          <div>
+            <span className="font-semibold text-[#344054] block mb-1">
+              Standard Tools Experience:
+            </span>
+            <div className="grid grid-cols-3 gap-1 text-[10px]">
+              {['Tableau', 'HubSpot', 'Google Analytics', 'Jira', 'Excel', 'Mixpanel'].map(
+                (toolName) => {
+                  const key = toolName.toLowerCase().replace(/\s+/g, '');
+                  const hasExp = toolExperience[key] || toolExperience[toolName.toLowerCase()];
+                  return (
+                    <span
+                      key={toolName}
+                      className={`px-1.5 py-1 rounded text-center font-medium ${
+                        hasExp === true
+                          ? 'bg-emerald-50 text-[#027A48] border border-emerald-200'
+                          : 'bg-gray-50 text-[#667085] border border-gray-200'
+                      }`}
+                    >
+                      {toolName}: {hasExp === true ? 'Recorded' : 'Unlisted'}
+                    </span>
+                  );
+                }
+              )}
+            </div>
+          </div>
+
+          {/* Mentorship Quality */}
+          {mentor.mentorshipQuality && (
+            <div className="text-[11px] text-[#667085]">
+              <span className="font-semibold text-[#344054]">Verified Mentorship Rating: </span>
+              <span className="capitalize text-[#315E9E] font-bold">
+                {mentor.mentorshipQuality}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="pt-2">
+        <button
+          type="button"
+          onClick={onBook}
+          className="w-full py-2 px-3 bg-[#315E9E] hover:bg-[#26497B] text-white text-xs font-semibold rounded-lg transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+        >
+          <CalendarCheck className="w-3.5 h-3.5" />
+          <span>Book 1-on-1 Consultation</span>
+        </button>
+      </div>
     </div>
   );
 }

@@ -13,7 +13,7 @@ from models.user_model import (
 from models.booking_model import BookingResponse
 from utils.auth import require_admin, log_audit_event
 from services.google_calendar import delete_calendar_event
-from services.email_service import send_booking_cancellation
+from services.email_service import send_booking_confirmation, send_booking_cancellation
 
 from pydantic import BaseModel, Field
 
@@ -45,6 +45,7 @@ async def get_admin_dashboard_stats(current_user: UserResponse = Depends(require
     })
     completed_bookings = await db["bookings"].count_documents({"status": "completed"})
     cancelled_bookings = await db["bookings"].count_documents({"status": "cancelled"})
+    pending_bookings = await db["bookings"].count_documents({"status": "pending"})
 
     # 2. Conversations & messages counts
     total_conversations = await db["conversations"].count_documents({})
@@ -154,6 +155,7 @@ async def get_admin_dashboard_stats(current_user: UserResponse = Depends(require
             "totalAdmins": total_admins,
             "totalBookings": total_bookings,
             "upcomingBookings": upcoming_bookings,
+            "pendingBookings": pending_bookings,
             "completedBookings": completed_bookings,
             "cancelledBookings": cancelled_bookings,
             "totalConversations": total_conversations,
@@ -381,7 +383,12 @@ async def update_booking_status(
     booking["status"] = new_status
     booking["updatedAt"] = now
 
-    if new_status == "cancelled" and old_status != "cancelled":
+    if new_status == "confirmed" and old_status == "pending":
+        try:
+            await send_booking_confirmation(booking)
+        except Exception as e:
+            print(f"Warning: Confirmation email on status update failed: {e}")
+    elif new_status == "cancelled" and old_status != "cancelled":
         try:
             await send_booking_cancellation(booking)
         except Exception as e:
@@ -392,6 +399,108 @@ async def update_booking_status(
         action="UPDATE_BOOKING_STATUS",
         target_user_id=booking.get("userId"),
         details={"bookingId": booking_id, "oldStatus": old_status, "newStatus": new_status}
+    )
+
+    updated = await db["bookings"].find_one({"bookingId": booking_id}, {"_id": 0})
+    return BookingResponse(**updated)
+
+@router.post("/bookings/{booking_id}/approve", response_model=BookingResponse)
+async def approve_booking(
+    booking_id: str,
+    current_user: UserResponse = Depends(require_admin)
+):
+    db = get_database()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database connection unavailable")
+
+    booking = await db["bookings"].find_one({"bookingId": booking_id})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    if booking.get("status") == "cancelled":
+        raise HTTPException(status_code=400, detail="Cannot approve a cancelled booking.")
+
+    now = datetime.now(timezone.utc)
+    old_status = booking.get("status")
+
+    await db["bookings"].update_one(
+        {"bookingId": booking_id},
+        {"$set": {
+            "status": "confirmed",
+            "approvedAt": now,
+            "approvedBy": current_user.email,
+            "updatedAt": now
+        }}
+    )
+
+    booking["status"] = "confirmed"
+    booking["approvedAt"] = now
+    booking["approvedBy"] = current_user.email
+    booking["updatedAt"] = now
+
+    try:
+        await send_booking_confirmation(booking)
+    except Exception as e:
+        print(f"Warning: Admin approval confirmation email failed: {e}")
+
+    await log_audit_event(
+        admin_user=current_user,
+        action="APPROVE_BOOKING",
+        target_user_id=booking.get("userId"),
+        details={"bookingId": booking_id, "oldStatus": old_status, "newStatus": "confirmed"}
+    )
+
+    updated = await db["bookings"].find_one({"bookingId": booking_id}, {"_id": 0})
+    return BookingResponse(**updated)
+
+@router.post("/bookings/{booking_id}/reject", response_model=BookingResponse)
+async def reject_booking(
+    booking_id: str,
+    current_user: UserResponse = Depends(require_admin)
+):
+    db = get_database()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database connection unavailable")
+
+    booking = await db["bookings"].find_one({"bookingId": booking_id})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    now = datetime.now(timezone.utc)
+    old_status = booking.get("status")
+
+    cal_event_id = booking.get("calendarEventId")
+    if cal_event_id:
+        try:
+            await delete_calendar_event(cal_event_id)
+        except Exception:
+            pass
+
+    await db["bookings"].update_one(
+        {"bookingId": booking_id},
+        {"$set": {
+            "status": "cancelled",
+            "rejectedAt": now,
+            "rejectedBy": current_user.email,
+            "updatedAt": now
+        }}
+    )
+
+    booking["status"] = "cancelled"
+    booking["rejectedAt"] = now
+    booking["rejectedBy"] = current_user.email
+    booking["updatedAt"] = now
+
+    try:
+        await send_booking_cancellation(booking)
+    except Exception as e:
+        print(f"Warning: Admin rejection email failed: {e}")
+
+    await log_audit_event(
+        admin_user=current_user,
+        action="REJECT_BOOKING",
+        target_user_id=booking.get("userId"),
+        details={"bookingId": booking_id, "oldStatus": old_status, "newStatus": "cancelled"}
     )
 
     updated = await db["bookings"].find_one({"bookingId": booking_id}, {"_id": 0})

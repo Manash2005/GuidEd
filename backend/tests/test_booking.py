@@ -97,6 +97,14 @@ class MockBookingDB:
             "userId": "usr_bob",
             "email": "bob@example.com",
             "fullName": "Bob Student",
+            "role": "student",
+            "createdAt": now
+        })
+        self.users.docs.append({
+            "userId": "usr_admin",
+            "email": "admin@guided.app",
+            "fullName": "Admin User",
+            "role": "admin",
             "createdAt": now
         })
         self.mentors.docs.append({
@@ -127,10 +135,12 @@ mock_db = MockBookingDB()
 def get_mock_db():
     return mock_db
 
-token_alice = create_access_token({"sub": "usr_alice", "email": "alice@example.com"})
-token_bob = create_access_token({"sub": "usr_bob", "email": "bob@example.com"})
+token_alice = create_access_token({"sub": "usr_alice", "email": "alice@example.com", "role": "student"})
+token_bob = create_access_token({"sub": "usr_bob", "email": "bob@example.com", "role": "student"})
+token_admin = create_access_token({"sub": "usr_admin", "email": "admin@guided.app", "role": "admin"})
 auth_alice = {"Authorization": f"Bearer {token_alice}"}
 auth_bob = {"Authorization": f"Bearer {token_bob}"}
+auth_admin = {"Authorization": f"Bearer {token_admin}"}
 
 
 @patch("routes.booking_routes.get_database", side_effect=get_mock_db)
@@ -144,8 +154,9 @@ def test_get_mentor_slots(mock_b_db):
 
 
 @patch("routes.booking_routes.get_database", side_effect=get_mock_db)
+@patch("routes.admin_routes.get_database", side_effect=get_mock_db)
 @patch("utils.auth.get_database", side_effect=get_mock_db)
-def test_successful_booking_and_double_booking_prevention(mock_auth_db, mock_b_db):
+def test_successful_booking_and_double_booking_prevention(mock_auth_db, mock_admin_db, mock_b_db):
     target_dt = datetime.now(timezone.utc) + timedelta(days=3)
     slot_start = target_dt.replace(hour=10, minute=0, second=0, microsecond=0)
 
@@ -159,16 +170,16 @@ def test_successful_booking_and_double_booking_prevention(mock_auth_db, mock_b_d
     res1 = client.post("/api/bookings", json=payload, headers=auth_alice)
     assert res1.status_code == 201
     b_data = res1.json()
-    assert b_data["status"] == "confirmed"
+    assert b_data["status"] == "pending"
     assert b_data["mentorId"] == "M033"
     assert b_data["mentorName"] == "Mentor 033"
     assert b_data["userId"] == "usr_alice"
     booking_id = b_data["bookingId"]
 
-    # 2. Bob attempts to book the EXACT SAME slot with M033 -> 409 Conflict
+    # 2. Bob attempts to book the EXACT SAME slot with M033 -> 409 Conflict (Pending blocks overlap)
     res2 = client.post("/api/bookings", json=payload, headers=auth_bob)
     assert res2.status_code == 409
-    assert "already has a confirmed booking" in res2.json()["detail"].lower()
+    assert "already has an active or pending booking" in res2.json()["detail"].lower()
 
     # 3. Bob attempts to book an OVERLAPPING slot (10:15 - 10:45) with M033 -> 409 Conflict
     overlap_start = slot_start + timedelta(minutes=15)
@@ -192,7 +203,7 @@ def test_successful_booking_and_double_booking_prevention(mock_auth_db, mock_b_d
     assert res4.status_code == 409
     assert "you already have an active mentorship booking" in res4.json()["detail"].lower()
 
-    # 5. Check slots API reflects booked status
+    # 5. Check slots API reflects booked status (pending bookings block slot)
     slot_date = slot_start.strftime("%Y-%m-%d")
     slots_res = client.get(f"/api/bookings/mentors/M033/slots?target_date={slot_date}")
     assert slots_res.status_code == 200
@@ -200,15 +211,20 @@ def test_successful_booking_and_double_booking_prevention(mock_auth_db, mock_b_d
     assert booked_slot is not None
     assert booked_slot["isAvailable"] is False
 
+    # 6. Admin approves the pending booking -> transitions to confirmed
+    appr_res = client.post(f"/api/admin/bookings/{booking_id}/approve", headers=auth_admin)
+    assert appr_res.status_code == 200
+    assert appr_res.json()["status"] == "confirmed"
+
     # 6. Alice cancels her booking
     cancel_res = client.post(f"/api/bookings/{booking_id}/cancel", headers=auth_alice)
     assert cancel_res.status_code == 200
     assert cancel_res.json()["status"] == "cancelled"
 
-    # 7. Bob can now book the freed slot successfully!
+    # 7. Bob can now book the freed slot successfully (creates pending booking)!
     res5 = client.post("/api/bookings", json=payload, headers=auth_bob)
     assert res5.status_code == 201
-    assert res5.json()["status"] == "confirmed"
+    assert res5.json()["status"] == "pending"
 
 
 @patch("routes.booking_routes.get_database", side_effect=get_mock_db)

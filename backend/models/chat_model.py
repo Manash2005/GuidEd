@@ -19,6 +19,9 @@ class SendMessageRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=1000)
     constraints: Optional[Dict[str, Any]] = None
 
+class UpdateTitleRequest(BaseModel):
+    title: str = Field(..., min_length=1, max_length=100)
+
 class ConversationSummaryResponse(BaseModel):
     conversationId: str
     userId: str

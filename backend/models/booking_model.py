@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Literal
+from typing import Optional, Literal, List
 from pydantic import BaseModel, Field
 
 class CreateBookingRequest(BaseModel):
@@ -24,9 +24,13 @@ class BookingResponse(BaseModel):
     slotStart: datetime
     slotEnd: datetime
     durationMinutes: int
-    status: Literal["confirmed", "upcoming", "pending", "completed", "cancelled"]
+    status: Literal["confirmed", "upcoming", "pending", "pending_confirmation", "completed", "cancelled"]
     topic: str
     meetingLink: Optional[str] = None
     calendarEventId: Optional[str] = None
     createdAt: datetime
     updatedAt: datetime
+
+class BookingListResponse(BaseModel):
+    bookings: List[BookingResponse]
+    total: int = 0

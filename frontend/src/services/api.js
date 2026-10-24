@@ -1,4 +1,6 @@
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api`
+  : '/api';
 
 export function getToken() {
   return localStorage.getItem('guided_token');
@@ -61,6 +63,8 @@ export const studentApi = {
   getConversation: (convId) => apiRequest(`/chat/conversations/${convId}`),
   createConversation: (payload) => apiRequest('/chat/conversations', { method: 'POST', body: JSON.stringify(payload) }),
   sendMessage: (convId, message) => apiRequest(`/chat/conversations/${convId}/messages`, { method: 'POST', body: JSON.stringify({ message }) }),
+  updateConversationTitle: (convId, title) => apiRequest(`/chat/conversations/${convId}/title`, { method: 'PATCH', body: JSON.stringify({ title }) }),
+  deleteConversation: (convId) => apiRequest(`/chat/conversations/${convId}`, { method: 'DELETE' }),
   getRecommendations: (query, k = 5) => apiRequest('/agent/recommend', { method: 'POST', body: JSON.stringify({ query, top_k: k }) }),
   getMentorSlots: (mentorId, targetDate, duration = 30) => apiRequest(`/bookings/mentors/${mentorId}/slots?target_date=${targetDate}&duration_minutes=${duration}`),
   bookSlot: (payload) => apiRequest('/bookings', { method: 'POST', body: JSON.stringify(payload) }),
@@ -92,6 +96,8 @@ export const adminApi = {
     return apiRequest(`/admin/bookings${qs ? `?${qs}` : ''}`);
   },
   updateBookingStatus: (bookingId, status) => apiRequest(`/admin/bookings/${bookingId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  approveBooking: (bookingId) => apiRequest(`/admin/bookings/${bookingId}/approve`, { method: 'POST' }),
+  rejectBooking: (bookingId) => apiRequest(`/admin/bookings/${bookingId}/reject`, { method: 'POST' }),
   getAuditLogs: (page = 1, limit = 20) => apiRequest(`/admin/audit-logs?page=${page}&limit=${limit}`),
   getHealth: () => apiRequest('/admin/health')
 };

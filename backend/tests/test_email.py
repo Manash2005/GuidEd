@@ -74,6 +74,13 @@ class MockDB:
             "fullName": "Student Test",
             "createdAt": now
         })
+        self.users.docs.append({
+            "userId": "usr_admin_email",
+            "email": "admin@guided.app",
+            "fullName": "Admin Email Test",
+            "role": "admin",
+            "createdAt": now
+        })
         self.mentors.docs.append({
             "mentorId": "M033",
             "name": "Mentor 033"
@@ -87,7 +94,8 @@ mock_db = MockDB()
 def get_mock_db():
     return mock_db
 
-auth_header = {"Authorization": f"Bearer {create_access_token({'sub': 'usr_email_test', 'email': 'student@example.com'})}"}
+auth_header = {"Authorization": f"Bearer {create_access_token({'sub': 'usr_email_test', 'email': 'student@example.com', 'role': 'student'})}"}
+admin_auth_header = {"Authorization": f"Bearer {create_access_token({'sub': 'usr_admin_email', 'email': 'admin@guided.app', 'role': 'admin'})}"}
 
 
 # --- Unit Tests: Template Rendering ---
@@ -178,13 +186,14 @@ async def test_high_level_helpers_idempotency(mock_db_call):
 # --- Integration Test: Booking Endpoints Trigger Emails ---
 
 @patch("routes.booking_routes.get_database", side_effect=get_mock_db)
+@patch("routes.admin_routes.get_database", side_effect=get_mock_db)
 @patch("utils.auth.get_database", side_effect=get_mock_db)
 @patch("services.email_service.get_database", side_effect=get_mock_db)
-def test_booking_endpoints_dispatch_notifications(mock_email_db, mock_auth_db, mock_b_db):
+def test_booking_endpoints_dispatch_notifications(mock_email_db, mock_auth_db, mock_admin_db, mock_b_db):
     target_dt = datetime.now(timezone.utc) + timedelta(days=4)
     slot_start = target_dt.replace(hour=11, minute=0, second=0, microsecond=0)
 
-    # 1. Create booking
+    # 1. Student creates booking -> pending admin approval
     res = client.post("/api/bookings", json={
         "mentorId": "M033",
         "slotStart": slot_start.isoformat(),
@@ -193,15 +202,21 @@ def test_booking_endpoints_dispatch_notifications(mock_email_db, mock_auth_db, m
     }, headers=auth_header)
 
     assert res.status_code == 201
+    assert res.json()["status"] == "pending"
     booking_id = res.json()["bookingId"]
 
-    # Verify notification recorded
+    # 2. Admin approves booking -> dispatches confirmation email
+    appr_res = client.post(f"/api/admin/bookings/{booking_id}/approve", headers=admin_auth_header)
+    assert appr_res.status_code == 200
+    assert appr_res.json()["status"] == "confirmed"
+
+    # Verify confirmation notification recorded
     confirm_key = f"email_confirm_{booking_id}"
     confirm_notif = next((n for n in mock_db.notifications.docs if n.get("idempotencyKey") == confirm_key), None)
     assert confirm_notif is not None
     assert confirm_notif["status"] == "sent"
 
-    # 2. Cancel booking
+    # 3. Cancel booking
     cancel_res = client.post(f"/api/bookings/{booking_id}/cancel", headers=auth_header)
     assert cancel_res.status_code == 200
 

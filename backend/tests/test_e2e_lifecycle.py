@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from main import app
 from db.mongo import db_instance
+from utils.auth import create_access_token
 
 class MockCursor:
     def __init__(self, docs):
@@ -136,6 +137,13 @@ def mock_db_fixture(monkeypatch):
         "rating": 4.9,
         "reviewCount": 42,
         "skills": ["python", "langchain", "machine learning"]
+    })
+    fake_db["users"].docs.append({
+        "userId": "usr_admin_e2e",
+        "email": "admin@guided.app",
+        "fullName": "Admin E2E",
+        "role": "admin",
+        "status": "active"
     })
     monkeypatch.setattr(db_instance, "db", fake_db)
     yield fake_db
@@ -318,7 +326,7 @@ def test_complete_e2e_student_lifecycle(client):
     assert book_res.status_code == 201, book_res.text
     booking = book_res.json()
     booking_id = booking["bookingId"]
-    assert booking["status"] == "confirmed"
+    assert booking["status"] == "pending"
     assert booking["mentorId"] == "M001"
     assert "meetingLink" in booking
     assert booking["meetingLink"] is not None
@@ -326,14 +334,23 @@ def test_complete_e2e_student_lifecycle(client):
     # 10. Double-booking conflict check (attempting duplicate booking on same slot)
     dup_res = client.post("/api/bookings", json=booking_req, headers=auth_headers)
     assert dup_res.status_code == 409
-    assert "already has a confirmed booking" in dup_res.json()["detail"]
+    assert "already has an active or pending booking" in dup_res.json()["detail"].lower()
 
-    # 11. Cancel booking
+    # 11. Admin approves the booking
+    admin_token = create_access_token({"sub": "usr_admin_e2e", "email": "admin@guided.app", "role": "admin"})
+    appr_res = client.post(
+        f"/api/admin/bookings/{booking_id}/approve",
+        headers={"Authorization": f"Bearer {admin_token}", "x-skip-rate-limit": "true"}
+    )
+    assert appr_res.status_code == 200
+    assert appr_res.json()["status"] == "confirmed"
+
+    # 12. Cancel booking
     cancel_res = client.post(f"/api/bookings/{booking_id}/cancel", headers=auth_headers)
     assert cancel_res.status_code == 200
     assert cancel_res.json()["status"] == "cancelled"
 
-    # 12. Re-check slot availability (slot should be liberated)
+    # 13. Re-check slot availability (slot should be liberated)
     slots_res_after = client.get(
         f"/api/bookings/mentors/M001/slots?target_date={tomorrow}&duration_minutes=30",
         headers=auth_headers

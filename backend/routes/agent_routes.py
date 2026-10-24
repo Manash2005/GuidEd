@@ -1,5 +1,5 @@
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
 from agent.recommender import recommend, MentorRecommendation
@@ -25,13 +25,6 @@ class RecommendRequest(BaseModel):
     )
 
 
-class ScoreBreakdown(BaseModel):
-    semanticScore: float = Field(..., description="Dense semantic and cross-encoder score [0-1]")
-    domainSectorScore: float = Field(..., description="Domain and sector relevance score [0-1]")
-    roleToolScore: float = Field(..., description="Role and tool match score [0-1]")
-    seniorityQualityScore: float = Field(..., description="Seniority and mentorship quality score [0-1]")
-
-
 class RecommendationItem(BaseModel):
     mentorId: str = Field(..., description="Unique mentor ID (e.g. M033)")
     name: str = Field(..., description="Mentor's verified name")
@@ -46,9 +39,14 @@ class RecommendationItem(BaseModel):
     limitations: str = Field(..., description="Missing or uncertain details (e.g. missing seniority, unlisted tools)")
     compositeScore: Optional[float] = Field(None, description="Explainable composite match score [0-1]")
     matchPercentage: Optional[int] = Field(None, description="Match percentage score [0-100]")
-    scoreBreakdown: Optional[ScoreBreakdown] = Field(None, description="Breakdown of composite score components")
+    scoreBreakdown: Optional[Dict[str, Any]] = Field(None, description="Breakdown of composite score components")
     distance: Optional[float] = Field(None, description="Vector similarity distance score")
     rerankScore: Optional[float] = Field(None, description="FlashRank cross-encoder score")
+    aiProfile: Optional[Dict[str, Any]] = Field(default=None, description="AI subdomains and tools")
+    toolExperience: Optional[Dict[str, Any]] = Field(default=None, description="Documented tool experience")
+    mentorshipQuality: Optional[str] = Field(None, description="Mentorship quality level")
+    activities: Optional[List[str]] = Field(default_factory=list, description="Mentor activities")
+    dataQualityIssues: Optional[List[str]] = Field(default_factory=list, description="Recorded data quality issues")
 
 
 class RecommendResponse(BaseModel):
@@ -57,6 +55,7 @@ class RecommendResponse(BaseModel):
     summary: str
     recommendations: List[RecommendationItem]
     candidatesConsidered: int
+    isFollowUp: Optional[bool] = Field(default=False, description="True if assistant is requesting clarification")
 
 
 @router.post("/recommend", response_model=RecommendResponse)
@@ -66,9 +65,10 @@ async def recommend_mentors(payload: RecommendRequest):
         return RecommendResponse(
             question=payload.query,
             hasMatches=False,
-            summary=guard.reason or "GuidEd only supports career and mentorship inquiries.",
+            summary=guard.reason or "I can help with career planning, professional skills, interview preparation, and finding mentors. Could you rephrase your question around your career goals?",
             recommendations=[],
-            candidatesConsidered=0
+            candidatesConsidered=0,
+            isFollowUp=False
         )
 
     try:
@@ -79,4 +79,4 @@ async def recommend_mentors(payload: RecommendRequest):
         )
         return RecommendResponse(**result)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Recommendation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Recommendation service encountered an unexpected error. Please try again.")

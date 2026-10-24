@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { mentorApi, getMentorPassword } from '../../services/api';
+import { mentorApi } from '../../services/api';
 import {
   Calendar,
   Clock,
@@ -12,7 +12,11 @@ import {
   Save,
   CheckCircle2,
   X,
-  Mail
+  Mail,
+  Building2,
+  MapPin,
+  Award,
+  AlertCircle
 } from 'lucide-react';
 
 export default function MentorDashboard() {
@@ -127,108 +131,131 @@ export default function MentorDashboard() {
     }
   };
 
-  const currentMentorId = dashboardData?.mentorId || user.mentorId || 'MENTOR';
+  const currentMentorId = dashboardData?.mentorId || user?.mentorId || 'MENTOR';
+
+  // Chronological sort: upcoming first, then recent
+  const sortedBookings = [...bookings].sort(
+    (a, b) => new Date(a.slotStart) - new Date(b.slotStart)
+  );
 
   return (
     <div className="space-y-6 font-sans">
-      {/* Clean Header & Real Metrics */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#557945]/20">
-        <div className="flex items-center gap-2.5">
-          <h1 className="text-2xl font-extrabold text-[#F1F6F2] tracking-tight">Mentor Portal</h1>
-          <span className="text-[11px] bg-[#5D9253]/20 text-[#84CC78] border border-[#5D9253]/40 px-2 py-0.5 rounded-lg font-mono font-bold">
-            {currentMentorId}
-          </span>
+      {/* Mentor Header & KPI Metrics */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E4E7EC]">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-[#202124] tracking-tight">Mentor Workspace</h1>
+            <span className="text-xs bg-[#EFF4FA] text-[#315E9E] border border-[#D0DCEB] px-2.5 py-0.5 rounded-full font-mono font-bold">
+              ID: {currentMentorId}
+            </span>
+          </div>
+          <p className="text-xs text-[#667085] mt-0.5">
+            Manage your consultation sessions and prepare student career notes
+          </p>
         </div>
 
-        {/* Real Stats */}
+        {/* Verifiable Stats */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="glass-card px-4 py-2 rounded-2xl">
-            <span className="text-[10px] text-[#8BA190] font-semibold uppercase block">Upcoming</span>
-            <span className="text-base font-bold text-[#84CC78]">{dashboardData?.stats?.upcomingSessions || 0}</span>
+          <div className="bg-white border border-[#E4E7EC] px-4 py-2.5 rounded-xl shadow-xs">
+            <span className="text-[11px] text-[#667085] font-semibold uppercase block">Upcoming</span>
+            <span className="text-lg font-bold text-[#315E9E]">
+              {dashboardData?.stats?.upcomingSessions || 0}
+            </span>
           </div>
-          <div className="glass-card px-4 py-2 rounded-2xl">
-            <span className="text-[10px] text-[#8BA190] font-semibold uppercase block">Completed</span>
-            <span className="text-base font-bold text-[#FFCB3D]">{dashboardData?.stats?.completedSessions || 0}</span>
+          <div className="bg-white border border-[#E4E7EC] px-4 py-2.5 rounded-xl shadow-xs">
+            <span className="text-[11px] text-[#667085] font-semibold uppercase block">Completed</span>
+            <span className="text-lg font-bold text-[#12B76A]">
+              {dashboardData?.stats?.completedSessions || 0}
+            </span>
           </div>
-          <div className="glass-card px-4 py-2 rounded-2xl">
-            <span className="text-[10px] text-[#8BA190] font-semibold uppercase block">Total</span>
-            <span className="text-base font-bold text-[#F1A344]">{bookings.length}</span>
+          <div className="bg-white border border-[#E4E7EC] px-4 py-2.5 rounded-xl shadow-xs">
+            <span className="text-[11px] text-[#667085] font-semibold uppercase block">Total</span>
+            <span className="text-lg font-bold text-[#202124]">{bookings.length}</span>
           </div>
         </div>
       </div>
 
       {statusFeedback && (
-        <div className="p-3 bg-[#5D9253]/15 border border-[#5D9253]/35 text-[#84CC78] text-xs rounded-xl font-medium flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-[#5D9253]" />
+        <div className="p-3 bg-emerald-50 border border-emerald-200 text-[#027A48] text-xs rounded-lg font-medium flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-[#12B76A]" />
           <span>{statusFeedback}</span>
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-[#557945]/20 pb-2">
+      {/* Navigation Tabs */}
+      <div className="flex items-center gap-2 border-b border-[#E4E7EC] pb-2">
         <button
           onClick={() => setSearchParams({ tab: 'sessions' })}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition cursor-pointer ${
             activeTab === 'sessions'
-              ? 'bg-[#557945]/30 text-[#FFCB3D] border border-[#557945]/40 shadow-sm'
-              : 'text-[#A2B5A6] hover:text-[#F1F6F2] hover:bg-[#152318]'
+              ? 'bg-[#315E9E] text-white shadow-xs'
+              : 'text-[#667085] hover:text-[#202124] hover:bg-[#F8F9FA]'
           }`}
         >
-          <Calendar className="w-3.5 h-3.5 text-[#5D9253]" />
-          <span>My Sessions ({bookings.length})</span>
+          <Calendar className="w-4 h-4" />
+          <span>Consultation Sessions ({bookings.length})</span>
         </button>
 
         <button
           onClick={() => setSearchParams({ tab: 'profile' })}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition cursor-pointer ${
             activeTab === 'profile'
-              ? 'bg-[#557945]/30 text-[#FFCB3D] border border-[#557945]/40 shadow-sm'
-              : 'text-[#A2B5A6] hover:text-[#F1F6F2] hover:bg-[#152318]'
+              ? 'bg-[#315E9E] text-white shadow-xs'
+              : 'text-[#667085] hover:text-[#202124] hover:bg-[#F8F9FA]'
           }`}
         >
-          <UserCheck className="w-3.5 h-3.5 text-[#5D9253]" />
+          <UserCheck className="w-4 h-4" />
           <span>Profile &amp; Email</span>
         </button>
       </div>
 
-      {/* Tab 1: Sessions List & Student Context */}
+      {/* Tab 1: Sessions List & Student Preparation Context */}
       {activeTab === 'sessions' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 glass-panel rounded-2xl p-5 shadow-xl space-y-3">
-            <h2 className="text-xs font-bold text-[#F1F6F2] uppercase tracking-wider mb-2">
-              Scheduled Sessions
+          <div className="lg:col-span-2 bg-white rounded-xl border border-[#E4E7EC] p-5 shadow-xs space-y-4">
+            <h2 className="text-sm font-bold text-[#202124] uppercase tracking-wider">
+              Chronological Consultations
             </h2>
 
-            {bookings.length === 0 ? (
-              <div className="text-center py-12 text-[#8BA190] text-xs border border-dashed border-[#557945]/30 rounded-2xl p-6">
+            {sortedBookings.length === 0 ? (
+              <div className="text-center py-12 text-[#667085] text-xs border border-dashed border-[#E4E7EC] rounded-xl p-6">
                 No bookings scheduled yet for {currentMentorId}.
               </div>
             ) : (
               <div className="space-y-3">
-                {bookings.map((booking) => {
+                {sortedBookings.map((booking) => {
                   const isConfirmed = booking.status === 'confirmed' || booking.status === 'upcoming';
+                  const isCompleted = booking.status === 'completed';
+                  const isCancelled = booking.status === 'cancelled';
+
                   return (
                     <div
                       key={booking.bookingId}
-                      className="p-4 glass-card rounded-2xl space-y-3 hover:border-[#5D9253]/50 transition"
+                      className="p-4 bg-white rounded-xl border border-[#E4E7EC] shadow-xs space-y-3 hover:border-[#315E9E]/40 transition"
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-[#F1F6F2]">{booking.userName || 'Student'}</span>
+                            <span className="text-sm font-bold text-[#202124]">
+                              {booking.userName || 'Student'}
+                            </span>
                             <span
                               className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                                isConfirmed
-                                  ? 'bg-[#5D9253]/20 text-[#84CC78] border-[#5D9253]/40'
-                                  : booking.status === 'completed'
-                                  ? 'bg-[#FFCB3D]/15 text-[#FFCB3D] border-[#FFCB3D]/30'
-                                  : 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                                booking.status === 'pending'
+                                  ? 'bg-amber-50 text-[#B54708] border-amber-200'
+                                  : isConfirmed
+                                  ? 'bg-emerald-50 text-[#027A48] border-emerald-200'
+                                  : isCompleted
+                                  ? 'bg-gray-100 text-[#344054] border-gray-200'
+                                  : 'bg-rose-50 text-[#D92D20] border-rose-200'
                               }`}
                             >
-                              {booking.status}
+                              {booking.status === 'pending' ? 'Pending Approval' : booking.status}
                             </span>
                           </div>
-                          <span className="text-[10px] text-[#8BA190] font-mono">{booking.bookingId}</span>
+                          <span className="text-[11px] text-[#98A2B3] font-mono">
+                            {booking.bookingId} &bull; {booking.userEmail}
+                          </span>
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -237,56 +264,61 @@ export default function MentorDashboard() {
                               href={booking.meetingLink}
                               target="_blank"
                               rel="noreferrer"
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#5D9253] hover:bg-[#5D9253]/90 text-[#090E0A] text-[11px] font-bold rounded-xl transition shadow-sm"
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#315E9E] hover:bg-[#26497B] text-white text-xs font-semibold rounded-lg transition shadow-xs"
                             >
                               <Video className="w-3.5 h-3.5" />
-                              <span>Join Call</span>
+                              <span>Join Meet</span>
                               <ExternalLink className="w-3 h-3" />
                             </a>
                           )}
 
                           <button
                             onClick={() => handleViewStudentContext(booking.bookingId)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#142017] hover:bg-[#1C2F20] text-[#D0DDD2] text-[11px] font-medium rounded-xl border border-[#557945]/30 transition"
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-[#F8F9FA] text-[#344054] text-xs font-medium rounded-lg border border-[#D0D5DD] transition cursor-pointer"
                           >
-                            <FileText className="w-3 h-3 text-[#5D9253]" />
-                            <span>Context</span>
+                            <FileText className="w-3.5 h-3.5 text-[#667085]" />
+                            <span>Student Context</span>
                           </button>
                         </div>
                       </div>
 
-                      <div className="text-xs text-[#D0DDD2] bg-[#0E1610]/60 p-2.5 rounded-xl border border-[#557945]/20">
-                        {booking.topic}
+                      <div className="text-xs text-[#344054] space-y-1 bg-[#F8F9FA] p-3 rounded-lg">
+                        <div className="flex items-center gap-2 text-[#202124] font-medium">
+                          <Clock className="w-3.5 h-3.5 text-[#315E9E]" />
+                          <span>
+                            {new Date(booking.slotStart).toLocaleString()} (UTC) &bull;{' '}
+                            {booking.durationMinutes || 30} mins
+                          </span>
+                        </div>
+                        <div className="text-[#667085]">
+                          <span className="font-semibold text-[#344054]">Topic: </span>
+                          {booking.topic || 'Mentorship consultation'}
+                        </div>
                       </div>
 
-                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#557945]/20 text-[11px] text-[#A2B5A6]">
-                        <div className="flex items-center gap-3">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-[#FFCB3D]" />
-                            {new Date(booking.slotStart).toUTCString()}
-                          </span>
-                          <span>&bull;</span>
-                          <span>{booking.durationMinutes} min</span>
-                        </div>
-
-                        {isConfirmed && (
-                          <div className="flex items-center gap-1.5">
+                      {/* Status Lifecycle Controls */}
+                      <div className="pt-2 flex items-center justify-between text-xs">
+                        <span className="text-[11px] text-[#98A2B3]">Update Stage:</span>
+                        <div className="flex items-center gap-1.5">
+                          {isConfirmed && (
                             <button
                               onClick={() => handleUpdateStatus(booking.bookingId, 'completed')}
                               disabled={updatingBookingId === booking.bookingId}
-                              className="px-2.5 py-1 bg-[#142017] hover:bg-[#557945]/40 text-[#84CC78] hover:text-[#FFCB3D] border border-[#557945]/30 rounded-lg text-[10px] font-bold transition disabled:opacity-50"
+                              className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-[#027A48] border border-emerald-200 rounded-md text-[11px] font-semibold transition cursor-pointer"
                             >
-                              {updatingBookingId === booking.bookingId ? '...' : 'Mark Completed'}
+                              Mark Completed
                             </button>
+                          )}
+                          {!isCancelled && (
                             <button
                               onClick={() => handleUpdateStatus(booking.bookingId, 'cancelled')}
                               disabled={updatingBookingId === booking.bookingId}
-                              className="px-2.5 py-1 bg-[#142017] hover:bg-rose-500/20 text-[#A2B5A6] hover:text-rose-400 border border-[#557945]/30 rounded-lg text-[10px] font-medium transition disabled:opacity-50"
+                              className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-[#D92D20] border border-rose-200 rounded-md text-[11px] font-semibold transition cursor-pointer"
                             >
-                              Cancel Call
+                              Cancel Session
                             </button>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
@@ -295,54 +327,52 @@ export default function MentorDashboard() {
             )}
           </div>
 
-          {/* Student Context Panel */}
-          <div className="glass-panel rounded-2xl p-5 shadow-xl space-y-3">
-            <h3 className="text-xs font-bold text-[#F1F6F2] uppercase tracking-wider">
-              Student Context
+          {/* Authorized Student Preparation Context Drawer */}
+          <div className="bg-white rounded-xl border border-[#E4E7EC] p-5 shadow-xs space-y-4">
+            <h3 className="text-sm font-bold text-[#202124] uppercase tracking-wider">
+              Student Preparation Context
             </h3>
 
-            {loadingContext && (
-              <div className="text-center py-10 text-xs text-[#8BA190] animate-pulse">
-                Loading context...
+            {loadingContext ? (
+              <div className="py-8 text-center text-xs text-[#667085] animate-pulse">
+                Loading authorized student context...
               </div>
-            )}
-
-            {!loadingContext && !selectedContext && (
-              <div className="text-center py-12 text-[#8BA190] text-xs">
-                Select a session on the left to inspect student details.
-              </div>
-            )}
-
-            {!loadingContext && selectedContext && (
-              <div className="space-y-3 text-xs">
-                <div className="p-3 bg-[#0E1610] rounded-xl border border-[#557945]/30 space-y-1">
-                  <div className="font-bold text-sm text-[#F1F6F2]">{selectedContext.studentName}</div>
-                  <div className="text-[11px] text-[#A2B5A6]">{selectedContext.studentEmail}</div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between py-1 border-b border-[#557945]/20">
-                    <span className="text-[#8BA190]">Domain</span>
-                    <span className="font-semibold text-[#F1F6F2]">{selectedContext.targetDomain || 'General'}</span>
+            ) : selectedContext ? (
+              <div className="space-y-4 text-xs">
+                <div className="p-3 bg-[#EFF4FA] border border-[#D0DCEB] rounded-lg space-y-1">
+                  <div className="font-bold text-sm text-[#202124]">
+                    {selectedContext.studentName || selectedContext.userName}
                   </div>
-                  <div className="flex justify-between py-1 border-b border-[#557945]/20">
-                    <span className="text-[#8BA190]">Education</span>
-                    <span className="font-semibold text-[#F1F6F2]">{selectedContext.educationLevel || 'Undergraduate'}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-[#557945]/20">
-                    <span className="text-[#8BA190]">Booking ID</span>
-                    <span className="font-mono text-[10px] text-[#FFCB3D]">{selectedContext.bookingId}</span>
+                  <div className="text-[#667085]">{selectedContext.studentEmail || selectedContext.userEmail}</div>
+                  <div className="text-[#315E9E] font-medium pt-1">
+                    Topic: {selectedContext.topic || 'General Mentorship'}
                   </div>
                 </div>
 
-                {selectedContext.recentNotes && (
-                  <div className="p-3 bg-[#0E1610] rounded-xl border border-[#557945]/30">
-                    <span className="text-[10px] font-bold text-[#FFCB3D] uppercase block mb-1">
-                      Notes
-                    </span>
-                    <p className="text-[11px] text-[#D0DDD2]">{selectedContext.recentNotes}</p>
+                {selectedContext.studentProfile && (
+                  <div className="space-y-1 bg-[#F8F9FA] p-3 rounded-lg">
+                    <span className="font-semibold text-[#344054] block">Student Goals:</span>
+                    <div>
+                      Target Domain: <strong>{selectedContext.studentProfile.targetDomain || 'N/A'}</strong>
+                    </div>
+                    <div>
+                      Education: <strong>{selectedContext.studentProfile.educationLevel || 'N/A'}</strong>
+                    </div>
                   </div>
                 )}
+
+                {selectedContext.sharedNotes && (
+                  <div className="p-3 bg-white border border-[#E4E7EC] rounded-lg space-y-1">
+                    <span className="font-semibold text-[#344054] block">Student Questions:</span>
+                    <p className="text-[#667085] leading-relaxed whitespace-pre-line">
+                      {selectedContext.sharedNotes}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="py-12 text-center text-[#98A2B3] text-xs">
+                Click <span className="font-semibold text-[#344054]">"Student Context"</span> on any session to view authorized preparation notes.
               </div>
             )}
           </div>
@@ -351,29 +381,29 @@ export default function MentorDashboard() {
 
       {/* Tab 2: Profile Settings with Editable Email */}
       {activeTab === 'profile' && (
-        <div className="max-w-xl mx-auto glass-panel rounded-2xl p-6 shadow-xl border border-[#557945]/30">
-          <h2 className="text-base font-bold text-[#F1F6F2] mb-1">Profile &amp; Email Settings</h2>
-          <p className="text-xs text-[#A2B5A6] mb-6">
-            Set your active email address to receive meeting notifications directly
+        <div className="max-w-xl mx-auto bg-white rounded-xl p-6 shadow-xs border border-[#E4E7EC]">
+          <h2 className="text-base font-bold text-[#202124] mb-1">Profile &amp; Email Settings</h2>
+          <p className="text-xs text-[#667085] mb-6">
+            Configure your active email address to receive meeting notifications directly.
           </p>
 
           {profileSaved && (
-            <div className="mb-4 p-3 bg-[#5D9253]/15 border border-[#5D9253]/35 text-[#84CC78] text-xs rounded-xl font-medium flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-[#5D9253]" />
+            <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-[#027A48] text-xs rounded-lg font-medium flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-[#12B76A]" />
               <span>Profile updated successfully</span>
             </div>
           )}
 
           {profileError && (
-            <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs rounded-xl">
+            <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-[#D92D20] text-xs rounded-lg">
               {profileError}
             </div>
           )}
 
           <form onSubmit={handleSaveProfile} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-[#D0DDD2] mb-1.5 flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-[#FFCB3D]" />
+              <label className="block text-xs font-semibold text-[#344054] mb-1.5 flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5 text-[#315E9E]" />
                 <span>Mentor Email Address (for meeting invitations)</span>
               </label>
               <input
@@ -382,66 +412,66 @@ export default function MentorDashboard() {
                 value={mentorProfile.email}
                 onChange={(e) => setMentorProfile({ ...mentorProfile, email: e.target.value })}
                 placeholder="you@domain.com"
-                className="w-full px-3.5 py-2.5 glass-input rounded-xl text-xs text-[#F1F6F2] focus:outline-none"
+                className="w-full px-3.5 py-2.5 bg-white border border-[#D0D5DD] rounded-lg text-sm text-[#202124] focus:outline-none focus:border-[#315E9E]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[#D0DDD2] mb-1.5">Company</label>
+              <label className="block text-xs font-semibold text-[#344054] mb-1.5">Company</label>
               <input
                 type="text"
                 value={mentorProfile.company}
                 onChange={(e) => setMentorProfile({ ...mentorProfile, company: e.target.value })}
                 placeholder="e.g. OpenAI, Stripe"
-                className="w-full px-3.5 py-2.5 glass-input rounded-xl text-xs text-[#F1F6F2] focus:outline-none"
+                className="w-full px-3.5 py-2.5 bg-white border border-[#D0D5DD] rounded-lg text-sm text-[#202124] focus:outline-none focus:border-[#315E9E]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[#D0DDD2] mb-1.5">Job Title</label>
+              <label className="block text-xs font-semibold text-[#344054] mb-1.5">Job Title</label>
               <input
                 type="text"
                 value={mentorProfile.role}
                 onChange={(e) => setMentorProfile({ ...mentorProfile, role: e.target.value })}
                 placeholder="e.g. Staff Engineer, Product Lead"
-                className="w-full px-3.5 py-2.5 glass-input rounded-xl text-xs text-[#F1F6F2] focus:outline-none"
+                className="w-full px-3.5 py-2.5 bg-white border border-[#D0D5DD] rounded-lg text-sm text-[#202124] focus:outline-none focus:border-[#315E9E]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[#D0DDD2] mb-1.5">Domain</label>
+              <label className="block text-xs font-semibold text-[#344054] mb-1.5">Domain</label>
               <input
                 type="text"
                 value={mentorProfile.domain}
                 onChange={(e) => setMentorProfile({ ...mentorProfile, domain: e.target.value })}
                 placeholder="e.g. Artificial Intelligence"
-                className="w-full px-3.5 py-2.5 glass-input rounded-xl text-xs text-[#F1F6F2] focus:outline-none"
+                className="w-full px-3.5 py-2.5 bg-white border border-[#D0D5DD] rounded-lg text-sm text-[#202124] focus:outline-none focus:border-[#315E9E]"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-[#D0DDD2] mb-1.5">City</label>
+                <label className="block text-xs font-semibold text-[#344054] mb-1.5">City</label>
                 <input
                   type="text"
                   value={mentorProfile.city}
                   onChange={(e) => setMentorProfile({ ...mentorProfile, city: e.target.value })}
                   placeholder="e.g. Bengaluru"
-                  className="w-full px-3.5 py-2.5 glass-input rounded-xl text-xs text-[#F1F6F2] focus:outline-none"
+                  className="w-full px-3.5 py-2.5 bg-white border border-[#D0D5DD] rounded-lg text-sm text-[#202124] focus:outline-none focus:border-[#315E9E]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#D0DDD2] mb-1.5">Seniority</label>
+                <label className="block text-xs font-semibold text-[#344054] mb-1.5">Seniority</label>
                 <select
                   value={mentorProfile.seniority}
                   onChange={(e) => setMentorProfile({ ...mentorProfile, seniority: e.target.value })}
-                  className="w-full px-3.5 py-2.5 glass-input rounded-xl text-xs text-[#F1F6F2] focus:outline-none"
+                  className="w-full px-3.5 py-2.5 bg-white border border-[#D0D5DD] rounded-lg text-sm text-[#202124] focus:outline-none focus:border-[#315E9E]"
                 >
-                  <option value="Senior" className="bg-[#0E1610]">Senior</option>
-                  <option value="Lead" className="bg-[#0E1610]">Lead</option>
-                  <option value="Principal" className="bg-[#0E1610]">Principal</option>
-                  <option value="Director" className="bg-[#0E1610]">Director</option>
+                  <option value="Senior">Senior</option>
+                  <option value="Lead">Lead</option>
+                  <option value="Principal">Principal</option>
+                  <option value="Director">Director</option>
                 </select>
               </div>
             </div>
@@ -449,10 +479,10 @@ export default function MentorDashboard() {
             <button
               type="submit"
               disabled={profileSaving}
-              className="w-full mt-2 py-2.5 px-4 rounded-xl text-xs font-bold text-[#090E0A] bg-gradient-to-r from-[#FFCB3D] via-[#F1A344] to-[#FFCB3D] hover:brightness-105 shadow-md shadow-[#FFCB3D]/15 transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full mt-2 py-2.5 px-4 rounded-lg text-sm font-semibold text-white bg-[#315E9E] hover:bg-[#26497B] transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-xs"
             >
-              <Save className="w-4 h-4 text-[#090E0A]" />
-              <span>{profileSaving ? 'Saving...' : 'Save Changes'}</span>
+              <Save className="w-4 h-4 text-white" />
+              <span>{profileSaving ? 'Saving...' : 'Save Profile Changes'}</span>
             </button>
           </form>
         </div>

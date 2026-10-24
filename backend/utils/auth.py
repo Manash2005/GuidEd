@@ -99,6 +99,8 @@ async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] =
         user["role"] = "student"
     if "status" not in user:
         user["status"] = "active"
+    if "createdAt" not in user or not user["createdAt"]:
+        user["createdAt"] = datetime.now(timezone.utc)
 
     return UserResponse(**user)
 
