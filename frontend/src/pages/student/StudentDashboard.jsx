@@ -732,7 +732,7 @@ export default function StudentDashboard() {
                     Top Matched Mentors ({latestRecs.length})
                   </h3>
                   <span className="text-[11px] text-[#667085]">
-                    Filtered by 100-point rubric (&ge; 50% threshold)
+                    Filtered by 100-point rubric (&ge; 30% threshold)
                   </span>
                 </div>
               </div>

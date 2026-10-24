@@ -316,7 +316,7 @@ def recommend(
     2. Dense Vector Search + ChromaDB metadata pre-filter.
     3. FlashRank Cross-Encoder reranks the pre-filtered candidates.
     4. Deterministic 100-Point Rubric scoring.
-    5. Filter out any candidate with match score < 50%.
+    5. Filter out any candidate with match score < 30%.
     6. LLM provides grounded explanations and evidence.
     """
     # Step 0: Check for underspecified query
@@ -446,17 +446,17 @@ def recommend(
             candidates_by_id[c_id]["_match_percentage"] = c.get("_match_percentage")
             candidates_by_id[c_id]["_rerank_score"] = c.get("_rerank_score")
 
-    # RULE 7: STRICTLY Filter out candidates with score < 50%
+    # RULE 7: STRICTLY Filter out candidates with score < 30%
     qualifying_candidates = [
         c for c in all_scored
-        if (c.get("_match_percentage") or int(round(c.get("_composite_score", 0) * 100))) >= 50
+        if (c.get("_match_percentage") or int(round(c.get("_composite_score", 0) * 100))) >= 30
     ]
 
     if not qualifying_candidates:
         return {
             "question": question,
             "hasMatches": False,
-            "summary": "We couldn't find a mentor meeting our 50% relevance threshold for your specific request. Try broadening your criteria, mentioning related industries, or asking about specific skills or tools.",
+            "summary": "We couldn't find a mentor meeting our 30% relevance threshold for your specific request. Try broadening your criteria, mentioning related industries, or asking about specific skills or tools.",
             "recommendations": [],
             "candidatesConsidered": len(passages),
             "isFollowUp": False
@@ -507,7 +507,7 @@ def recommend(
                 comp_score = actual_profile.get("_composite_score") or 0.5
                 match_pct = int(round(float(comp_score) * 100))
 
-            if match_pct >= 50:
+            if match_pct >= 30:
                 validated_recommendations.append({
                     "mentorId": rec_id,
                     "name": verified_name,
@@ -545,7 +545,7 @@ def recommend(
                 if c_pct is None:
                     c_pct = int(round(float(cand_profile.get("_composite_score", 0.5)) * 100))
 
-                if c_pct >= 50:
+                if c_pct >= 30:
                     sectors = cand_profile.get("sectorsOfExpertise") or []
                     roles = cand_profile.get("rolesOfExpertise") or []
                     domain = cand_profile.get("domain") or "Domain Specialist"
@@ -580,7 +580,7 @@ def recommend(
     validated_recommendations.sort(key=lambda x: x["matchPercentage"], reverse=True)
 
     has_matches = len(validated_recommendations) > 0
-    summary = llm_output.summary if has_matches else "No mentors met the 50% relevance threshold for this inquiry."
+    summary = llm_output.summary if has_matches else "No mentors met the 30% relevance threshold for this inquiry."
 
     return {
         "question": question,

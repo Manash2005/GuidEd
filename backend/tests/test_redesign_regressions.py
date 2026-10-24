@@ -108,36 +108,36 @@ def test_scores_vary_with_relevance_not_hardcoded_68():
     # High match must be high (>= 70%)
     assert high_total >= 70
 
-def test_boundary_filtering_50_percent_threshold():
+def test_boundary_filtering_30_percent_threshold():
     """
-    Test boundary behavior around the 50% threshold:
-    Candidates scoring < 50 must be filtered out.
+    Test boundary behavior around the 30% threshold:
+    Candidates scoring < 30 must be filtered out.
     """
-    c_49 = {
-        "mentorId": "M49",
-        "name": "Score 49",
-        "_composite_score": 0.49,
-        "_match_percentage": 49
+    c_29 = {
+        "mentorId": "M29",
+        "name": "Score 29",
+        "_composite_score": 0.29,
+        "_match_percentage": 29
     }
-    c_50 = {
-        "mentorId": "M50",
-        "name": "Score 50",
-        "_composite_score": 0.50,
-        "_match_percentage": 50
+    c_30 = {
+        "mentorId": "M30",
+        "name": "Score 30",
+        "_composite_score": 0.30,
+        "_match_percentage": 30
     }
-    c_51 = {
-        "mentorId": "M51",
-        "name": "Score 51",
-        "_composite_score": 0.51,
-        "_match_percentage": 51
+    c_31 = {
+        "mentorId": "M31",
+        "name": "Score 31",
+        "_composite_score": 0.31,
+        "_match_percentage": 31
     }
 
-    qualifying = [c for c in [c_49, c_50, c_51] if c["_match_percentage"] >= 50]
+    qualifying = [c for c in [c_29, c_30, c_31] if c["_match_percentage"] >= 30]
     qualifying_ids = [c["mentorId"] for c in qualifying]
 
-    assert "M49" not in qualifying_ids
-    assert "M50" in qualifying_ids
-    assert "M51" in qualifying_ids
+    assert "M29" not in qualifying_ids
+    assert "M30" in qualifying_ids
+    assert "M31" in qualifying_ids
     assert len(qualifying) == 2
 
 # ==============================================================================
