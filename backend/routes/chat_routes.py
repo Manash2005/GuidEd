@@ -1,4 +1,5 @@
 import uuid
+import asyncio
 from datetime import datetime, timezone
 from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends, status
@@ -67,7 +68,7 @@ async def create_conversation(
             )
         else:
             try:
-                rec = recommend(payload.initialMessage)
+                rec = await asyncio.to_thread(recommend, payload.initialMessage)
                 asst_msg = ChatMessage(
                     messageId=f"msg_{uuid.uuid4().hex[:10]}",
                     role="assistant",
@@ -229,7 +230,7 @@ async def send_message(
         )
     else:
         try:
-            rec = recommend(payload.message, constraints=payload.constraints)
+            rec = await asyncio.to_thread(recommend, payload.message, constraints=payload.constraints)
             asst_msg = ChatMessage(
                 messageId=f"msg_{uuid.uuid4().hex[:10]}",
                 role="assistant",

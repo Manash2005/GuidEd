@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
@@ -72,7 +73,8 @@ async def recommend_mentors(payload: RecommendRequest):
         )
 
     try:
-        result = recommend(
+        result = await asyncio.to_thread(
+            recommend,
             question=payload.query,
             constraints=payload.constraints,
             top_k=payload.top_k

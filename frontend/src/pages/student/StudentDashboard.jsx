@@ -252,6 +252,23 @@ export default function StudentDashboard() {
         await loadConversations();
       }
     } catch (err) {
+      // Auto-recovery: If network glitch or proxy dropped connection, check if backend saved the response in MongoDB
+      try {
+        if (activeConvId) {
+          const detail = await studentApi.getConversation(activeConvId);
+          if (detail && detail.messages && detail.messages.length > 0) {
+            const lastMsg = detail.messages[detail.messages.length - 1];
+            if (lastMsg && lastMsg.role === 'assistant') {
+              setChatMessages(detail.messages);
+              await loadConversations();
+              return;
+            }
+          }
+        }
+      } catch (checkErr) {
+        // Fall back to showing friendly error message
+      }
+
       setErrorMsg(
         err.message ||
         'I can help with career planning, professional skills, interview preparation, and finding mentors. Could you rephrase your question around your career goals?'
