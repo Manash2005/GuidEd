@@ -20,6 +20,7 @@ from langchain_openai import ChatOpenAI
 from langchain_chroma import Chroma
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from flashrank import Ranker, RerankRequest
+from agent.ranking import rank_candidates, RankingWeights
 
 # Paths
 CHROMA_DIR = BACKEND_DIR / "data" / "chroma_db"
@@ -232,27 +233,37 @@ def recommend(
                 "text": doc.page_content
             })
 
-    # Step 3: FlashRank Reranker (Select top K most relevant from candidate pool)
+    # Step 3: FlashRank Reranker (Score all candidate passages)
     rerank_request = RerankRequest(query=question, passages=passages)
     reranked = ranker.rerank(rerank_request)
 
-    top_candidates = []
-    for item in reranked[:top_k]:
+    candidate_list = []
+    for item in reranked:
         m_id = item["id"]
-        profile = candidates_by_id[m_id]
+        profile = candidates_by_id[m_id].copy()
         profile["_rerank_score"] = round(item["score"], 4)
-        top_candidates.append(profile)
+        candidate_list.append(profile)
+
+    # Step 4: Explainable Weighted Ranking (Semantic + Domain/Sector + Role/Tool + Seniority/Quality)
+    top_candidates = rank_candidates(question, candidate_list, top_k=top_k)
+
+    for c in top_candidates:
+        c_id = c["mentorId"]
+        if c_id in candidates_by_id:
+            candidates_by_id[c_id]["_composite_score"] = c.get("_composite_score")
+            candidates_by_id[c_id]["_score_breakdown"] = c.get("_score_breakdown")
+            candidates_by_id[c_id]["_rerank_score"] = c.get("_rerank_score")
 
     if not top_candidates:
         return {
             "question": question,
             "hasMatches": False,
-            "summary": "No mentors matched the inquiry after reranking.",
+            "summary": "No mentors matched the inquiry after ranking.",
             "recommendations": [],
             "candidatesConsidered": len(passages)
         }
 
-    # Step 4: Send top candidates + question to LLM
+    # Step 5: Send top candidates + question to LLM
     llm = get_llm()
     structured_llm = llm.with_structured_output(RecommendationOutput)
 
@@ -281,7 +292,7 @@ def recommend(
         "candidates_json": json.dumps(candidates_prompt_data, indent=2, ensure_ascii=False)
     })
 
-    # Step 5: Validate mentor IDs against retrieved results
+    # Step 6: Validate mentor IDs and attach explainable ranking scores
     eligible_ids = set(candidates_by_id.keys())
     validated_recommendations = []
 
@@ -296,6 +307,8 @@ def recommend(
                 "matchReason": rec.matchReason,
                 "relevantExperience": rec.relevantExperience,
                 "limitations": rec.limitations,
+                "compositeScore": actual_profile.get("_composite_score"),
+                "scoreBreakdown": actual_profile.get("_score_breakdown"),
                 "distance": actual_profile.get("_retrieval_distance"),
                 "rerankScore": actual_profile.get("_rerank_score")
             })

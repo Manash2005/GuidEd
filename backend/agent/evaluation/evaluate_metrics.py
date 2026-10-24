@@ -7,10 +7,15 @@ from datetime import datetime
 from pathlib import Path
 from dotenv import load_dotenv
 from langchain_chroma import Chroma
+from pathlib import Path
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from flashrank import Ranker, RerankRequest
+from agent.ranking import rank_candidates
 
-ROOT = Path(__file__).resolve().parents[2]
 DB = ROOT / "data" / "chroma_db"
 QUESTIONS = ROOT / "data" / "questions.json"
 README = ROOT / "readme.md"
@@ -79,8 +84,13 @@ def log_to_readme(search_type: str, k: int, summary: dict):
     print(f"\n[INFO] Cleanly logged '{search_type}' metrics to {README}")
 
 
-def evaluate(use_reranker: bool = True, k: int = 5, fetch_k: int = 25, num_eval_questions: int = 10):
-    search_type = "Two-Stage Hybrid (Dense BGE + FlashRank Over-Fetch 25)" if use_reranker else "Dense BGE Vector Search (No Reranker)"
+def evaluate(strategy: str = "weighted", k: int = 5, fetch_k: int = 25, num_eval_questions: int = 10):
+    if strategy == "weighted":
+        search_type = "Explainable Weighted Ranking (Dense BGE + FlashRank + Weighted Score)"
+    elif strategy == "hybrid":
+        search_type = "Two-Stage Hybrid (Dense BGE + FlashRank Over-Fetch 25)"
+    else:
+        search_type = "Dense BGE Vector Search (No Reranker)"
 
     with QUESTIONS.open(encoding="utf-8") as f:
         all_questions = json.load(f)
@@ -89,7 +99,7 @@ def evaluate(use_reranker: bool = True, k: int = 5, fetch_k: int = 25, num_eval_
 
     print("=" * 65)
     print(f"EVALUATING: {search_type}")
-    print(f"Fixed queries: {len(eval_questions)} | Final K = {k}" + (f" | Over-fetch Candidate Pool = {fetch_k}" if use_reranker else ""))
+    print(f"Fixed queries: {len(eval_questions)} | Final K = {k}" + (f" | Over-fetch Candidate Pool = {fetch_k}" if strategy != "baseline" else ""))
     print("=" * 65)
 
     total_recall = 0.0
@@ -105,25 +115,56 @@ def evaluate(use_reranker: bool = True, k: int = 5, fetch_k: int = 25, num_eval_
 
         print(f"[{i}/{len(eval_questions)}] {q_id}...", end=" ", flush=True)
 
-        # Stage 1: Dense Vector Retrieval (Over-fetching 25 candidates)
-        retrieve_limit = fetch_k if use_reranker else k
-        candidates = vector_store.similarity_search(q_text, k=retrieve_limit)
+        retrieve_limit = fetch_k if strategy != "baseline" else k
+        raw_results = vector_store.similarity_search_with_score(q_text, k=retrieve_limit)
 
-        if not candidates:
+        if not raw_results:
             print("[FAILED]")
             continue
 
-        # Stage 2: FlashRank Cross-Encoder Reranking
-        if use_reranker:
+        if strategy == "baseline":
+            retrieved = [doc.metadata["mentorId"] for doc, _ in raw_results[:k]]
+        elif strategy == "hybrid":
             passages = [
                 {"id": doc.metadata["mentorId"], "text": doc.page_content}
-                for doc in candidates
+                for doc, _ in raw_results
             ]
             rerank_request = RerankRequest(query=q_text, passages=passages)
             reranked_results = ranker.rerank(rerank_request)
             retrieved = [p["id"] for p in reranked_results[:k]]
         else:
-            retrieved = [doc.metadata["mentorId"] for doc in candidates[:k]]
+            # Weighted strategy: FlashRank rerank + explainable weighted scoring
+            candidates_by_id = {}
+            passages = []
+            for doc, dist in raw_results:
+                meta = doc.metadata or {}
+                raw_json = meta.get("raw_json")
+                if raw_json:
+                    try:
+                        prof = json.loads(raw_json)
+                    except Exception:
+                        prof = {"mentorId": meta.get("mentorId"), "name": meta.get("name")}
+                else:
+                    prof = {"mentorId": meta.get("mentorId"), "name": meta.get("name")}
+
+                m_id = prof.get("mentorId")
+                if m_id and m_id not in candidates_by_id:
+                    prof["_retrieval_distance"] = dist
+                    candidates_by_id[m_id] = prof
+                    passages.append({"id": m_id, "text": doc.page_content})
+
+            rerank_request = RerankRequest(query=q_text, passages=passages)
+            reranked_results = ranker.rerank(rerank_request)
+
+            cand_list = []
+            for item in reranked_results:
+                m_id = item["id"]
+                prof = candidates_by_id[m_id].copy()
+                prof["_rerank_score"] = item["score"]
+                cand_list.append(prof)
+
+            ranked = rank_candidates(q_text, cand_list, top_k=k)
+            retrieved = [c["mentorId"] for c in ranked]
 
         relevant_found = expected.intersection(retrieved)
 
@@ -171,8 +212,9 @@ def evaluate(use_reranker: bool = True, k: int = 5, fetch_k: int = 25, num_eval_
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate mentor retrieval strategies")
+    parser.add_argument("--strategy", choices=["weighted", "hybrid", "baseline"], default="weighted")
     parser.add_argument("--no-reranker", action="store_true", help="Run baseline without reranker")
     args = parser.parse_args()
 
-    use_reranker = not args.no_reranker
-    evaluate(use_reranker=use_reranker)
+    strat = "baseline" if args.no_reranker else args.strategy
+    evaluate(strategy=strat)

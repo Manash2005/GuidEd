@@ -44,3 +44,13 @@ Tracking retrieval quality on 10 fixed benchmark queries (`Q001` - `Q010`) at K=
 
 ---
 
+### 🔹 Explainable Weighted Ranking (Dense BGE + FlashRank + Weighted Score)
+- **Hit Rate@5:** 100.0%
+- **Mean Recall@5:** 64.4%
+- **Mean Precision@5:** 60.0%
+- **MRR@5:** 0.950
+- **Queries Evaluated:** 10
+- **Date:** 2026-10-24 12:50
+
+---
+

@@ -25,13 +25,23 @@ class RecommendRequest(BaseModel):
     )
 
 
+class ScoreBreakdown(BaseModel):
+    semanticScore: float = Field(..., description="Dense semantic and cross-encoder score [0-1]")
+    domainSectorScore: float = Field(..., description="Domain and sector relevance score [0-1]")
+    roleToolScore: float = Field(..., description="Role and tool match score [0-1]")
+    seniorityQualityScore: float = Field(..., description="Seniority and mentorship quality score [0-1]")
+
+
 class RecommendationItem(BaseModel):
     mentorId: str = Field(..., description="Unique mentor ID (e.g. M033)")
     name: str = Field(..., description="Mentor's verified name")
     matchReason: str = Field(..., description="Why this mentor fits the student's goal")
     relevantExperience: str = Field(..., description="Direct evidence from the mentor's profile")
     limitations: str = Field(..., description="Missing or uncertain details (e.g. missing seniority, unlisted tools)")
+    compositeScore: Optional[float] = Field(None, description="Explainable composite match score [0-1]")
+    scoreBreakdown: Optional[ScoreBreakdown] = Field(None, description="Breakdown of composite score components")
     distance: Optional[float] = Field(None, description="Vector similarity distance score")
+    rerankScore: Optional[float] = Field(None, description="FlashRank cross-encoder score")
 
 
 class RecommendResponse(BaseModel):
