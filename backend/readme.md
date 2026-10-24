@@ -24,3 +24,23 @@ Tracking retrieval quality on 10 fixed benchmark queries (`Q001` - `Q010`) at K=
 
 ---
 
+### 🔹 Two-Stage Hybrid (Dense BGE + FlashRank Over-Fetch 25)
+- **Hit Rate@5:** 100.0%
+- **Mean Recall@5:** 67.9%
+- **Mean Precision@5:** 64.0%
+- **MRR@5:** 0.950
+- **Queries Evaluated:** 10
+- **Date:** 2026-10-24 12:16
+
+---
+
+### 🔹 Dense BGE Vector Search (No Reranker)
+- **Hit Rate@5:** 100.0%
+- **Mean Recall@5:** 55.9%
+- **Mean Precision@5:** 54.0%
+- **MRR@5:** 0.950
+- **Queries Evaluated:** 10
+- **Date:** 2026-10-24 12:16
+
+---
+

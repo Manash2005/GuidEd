@@ -6,16 +6,20 @@ from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
+# Ensure root and backend paths are in sys.path
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
+# Load environment variables
 load_dotenv(BACKEND_DIR / ".env")
 
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
 from langchain_chroma import Chroma
+from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
+from flashrank import Ranker, RerankRequest
 
 # Paths
 CHROMA_DIR = BACKEND_DIR / "data" / "chroma_db"
@@ -24,8 +28,13 @@ DATA_FILE = BACKEND_DIR / "data" / "mentors.json"
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 
+# Initialize local FlashRank reranker (ms-marco-TinyBERT-L-2-v2)
+ranker = Ranker(model_name="ms-marco-TinyBERT-L-2-v2")
 
-#Schemas
+
+# ==============================================================================
+# Pydantic Schemas for Structured Output
+# ==============================================================================
 
 class MentorRecommendation(BaseModel):
     mentorId: str = Field(
@@ -64,18 +73,14 @@ class RecommendationOutput(BaseModel):
         description="List of structured recommendations matching the student's goal."
     )
 
+
+# ==============================================================================
+# Vector Store and LLM Setup
+# ==============================================================================
+
 def get_vector_store() -> Chroma:
-    """Initialize persistent ChromaDB vector store with OpenRouter embeddings."""
-    if not OPENROUTER_API_KEY:
-        raise ValueError("OPENROUTER_API_KEY is not configured in .env")
-
-    embeddings = OpenAIEmbeddings(
-        model="nvidia/nemotron-3-embed-1b:free",
-        base_url="https://openrouter.ai/api/v1",
-        api_key=OPENROUTER_API_KEY,
-        check_embedding_ctx_length=False
-    )
-
+    """Initialize ChromaDB with BAAI/bge-small-en-v1.5 dense semantic embeddings."""
+    embeddings = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5")
     return Chroma(
         collection_name="mentors",
         persist_directory=str(CHROMA_DIR),
@@ -90,7 +95,8 @@ def get_llm():
             model="openai/gpt-oss-20b",
             base_url="https://api.groq.com/openai/v1",
             api_key=GROQ_API_KEY,
-            temperature=0
+            temperature=0,
+            max_tokens=2048
         )
     elif OPENROUTER_API_KEY:
         return ChatOpenAI(
@@ -103,66 +109,40 @@ def get_llm():
         raise ValueError("Neither GROQ_API_KEY nor OPENROUTER_API_KEY is configured in .env")
 
 
-#constraints
+# ==============================================================================
+# Metadata Pre-Filter Builder
+# ==============================================================================
 
-def apply_hard_constraints(candidates: List[Dict[str, Any]], constraints: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+def build_chroma_where(constraints: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
     """
-    Filter candidate profiles by hard constraints (if provided).
-    Supported constraints:
-      - seniority: e.g. "Senior", "Mid-career"
-      - city: e.g. "Bengaluru", "San Francisco"
-      - domain: substring match
-      - is_ai_native: True/False
-      - built_ai_product: True/False
-      - required_tools: list of tool strings (mentor must have at least one)
+    Translates user constraints into a ChromaDB 'where' filter for pre-filtering.
+    Pre-filtering guarantees all retrieved candidates strictly meet the constraints.
     """
     if not constraints:
-        return candidates
+        return None
 
-    filtered = []
-    for mentor in candidates:
-        # Seniority constraint
-        if "seniority" in constraints:
-            required_seniority = constraints["seniority"]
-            if required_seniority is None and mentor.get("seniority") is not None:
-                continue
-            if required_seniority is not None and mentor.get("seniority") != required_seniority:
-                continue
+    clauses = []
+    if "city" in constraints and constraints["city"]:
+        clauses.append({"city": constraints["city"].strip().lower()})
+    if "seniority" in constraints and constraints["seniority"]:
+        clauses.append({"seniority": constraints["seniority"].strip().lower()})
+    if "domain" in constraints and constraints["domain"]:
+        clauses.append({"domain": constraints["domain"].strip().lower()})
+    if "is_ai_native" in constraints and constraints["is_ai_native"] is not None:
+        clauses.append({"isAINative": bool(constraints["is_ai_native"])})
+    if "built_ai_product" in constraints and constraints["built_ai_product"] is not None:
+        clauses.append({"builtAIProductOrWorkflow": bool(constraints["built_ai_product"])})
 
-        # City constraint
-        if "city" in constraints:
-            if mentor.get("city", "").lower() != constraints["city"].lower():
-                continue
+    if not clauses:
+        return None
+    if len(clauses) == 1:
+        return clauses[0]
+    return {"$and": clauses}
 
-        # Domain constraint
-        if "domain" in constraints:
-            if constraints["domain"].lower() not in mentor.get("domain", "").lower():
-                continue
 
-        # AI Native constraint
-        if "is_ai_native" in constraints:
-            ai_profile = mentor.get("aiProfile") or {}
-            if ai_profile.get("isAINative") != constraints["is_ai_native"]:
-                continue
-
-        # Built AI Product or Workflow constraint
-        if "built_ai_product" in constraints:
-            ai_profile = mentor.get("aiProfile") or {}
-            if ai_profile.get("builtAIProductOrWorkflow") != constraints["built_ai_product"]:
-                continue
-
-        # Required tools constraint
-        if "required_tools" in constraints:
-            ai_profile = mentor.get("aiProfile") or {}
-            mentor_tools = [t.lower() for t in (ai_profile.get("tools") or [])]
-            req_tools = [t.lower() for t in constraints["required_tools"]]
-            if not any(req_t in mentor_tools for req_t in req_tools):
-                continue
-
-        filtered.append(mentor)
-
-    return filtered
-
+# ==============================================================================
+# Main Recommendation Function (Two-Stage Hybrid + Pre-Filter + FlashRank)
+# ==============================================================================
 
 RECOMMENDER_PROMPT = ChatPromptTemplate.from_messages([
     ("system", """You are GuidEd's expert mentor matching assistant.
@@ -179,7 +159,7 @@ CRITICAL RULES:
     ("human", """Student Question:
 {question}
 
-Candidate Mentor Profiles (Top 10 retrieved):
+Candidate Mentor Profiles (Top retrieved & reranked):
 {candidates_json}
 
 Provide structured recommendations based strictly on the above candidates.""")
@@ -189,44 +169,90 @@ Provide structured recommendations based strictly on the above candidates.""")
 def recommend(
     question: str,
     constraints: Optional[Dict[str, Any]] = None,
-    top_k: int = 10
+    top_k: int = 5,
+    fetch_k: int = 25
 ) -> Dict[str, Any]:
     """
-    End-to-end mentor recommendation workflow:
-    1. ChromaDB retrieves top mentors
-    2. Apply hard constraints (if any)
-    3. Send candidates + question to LLM
-    4. Validate mentor IDs against retrieved results
-    5. Return structured recommendations with reasons
+    Two-Stage Hybrid Recommendation Pipeline:
+    1. Pre-filter ChromaDB via 'where' clause on categorical metadata (city, seniority, etc.).
+    2. Dense Semantic Search over flattened profiles, over-fetching (fetch_k=25).
+    3. FlashRank Cross-Encoder reranks the 25 pre-filtered candidates to pick the top K.
+    4. Send top candidates + question to LLM for grounded explanation.
+    5. Validate mentor IDs and return structured response.
     """
     vector_store = get_vector_store()
-    raw_results = vector_store.similarity_search_with_score(question, k=top_k)
 
-    candidates = []
-    candidates_by_id = {}
-    for doc, distance in raw_results:
-        try:
-            profile = json.loads(doc.page_content)
-        except Exception:
-            profile = {"mentorId": doc.metadata.get("mentorId")}
+    # Step 1: Build ChromaDB metadata pre-filter
+    where_filter = build_chroma_where(constraints)
 
-        mentor_id = profile.get("mentorId")
-        if mentor_id and mentor_id not in candidates_by_id:
-            profile["_retrieval_distance"] = round(distance, 4)
-            candidates.append(profile)
-            candidates_by_id[mentor_id] = profile
+    # Step 2: Over-fetch candidates with Dense Vector Search + Metadata Pre-Filter
+    try:
+        raw_results = vector_store.similarity_search_with_score(
+            question,
+            k=fetch_k,
+            filter=where_filter
+        )
+    except Exception as e:
+        print(f"Warning: Vector search with filter failed: {e}. Retrying without filter.")
+        raw_results = vector_store.similarity_search_with_score(question, k=fetch_k)
 
-    eligible_candidates = apply_hard_constraints(candidates, constraints)
-
-    if not eligible_candidates:
+    if not raw_results:
         return {
             "question": question,
             "hasMatches": False,
-            "summary": "No mentors matched the specified constraints in the retrieved dataset.",
+            "summary": "No mentors matched the specified constraints in the database.",
             "recommendations": [],
             "candidatesConsidered": 0
         }
 
+    # Extract profiles and prepare passages for reranking
+    candidates_by_id = {}
+    passages = []
+
+    for doc, distance in raw_results:
+        meta = doc.metadata or {}
+        raw_json_str = meta.get("raw_json")
+        if raw_json_str:
+            try:
+                profile = json.loads(raw_json_str)
+            except Exception:
+                profile = {"mentorId": meta.get("mentorId"), "name": meta.get("name")}
+        else:
+            try:
+                profile = json.loads(doc.page_content)
+            except Exception:
+                profile = {"mentorId": meta.get("mentorId"), "name": meta.get("name")}
+
+        mentor_id = profile.get("mentorId")
+        if mentor_id and mentor_id not in candidates_by_id:
+            profile["_retrieval_distance"] = round(distance, 4)
+            candidates_by_id[mentor_id] = profile
+            passages.append({
+                "id": mentor_id,
+                "text": doc.page_content
+            })
+
+    # Step 3: FlashRank Reranker (Select top K most relevant from candidate pool)
+    rerank_request = RerankRequest(query=question, passages=passages)
+    reranked = ranker.rerank(rerank_request)
+
+    top_candidates = []
+    for item in reranked[:top_k]:
+        m_id = item["id"]
+        profile = candidates_by_id[m_id]
+        profile["_rerank_score"] = round(item["score"], 4)
+        top_candidates.append(profile)
+
+    if not top_candidates:
+        return {
+            "question": question,
+            "hasMatches": False,
+            "summary": "No mentors matched the inquiry after reranking.",
+            "recommendations": [],
+            "candidatesConsidered": len(passages)
+        }
+
+    # Step 4: Send top candidates + question to LLM
     llm = get_llm()
     structured_llm = llm.with_structured_output(RecommendationOutput)
 
@@ -240,12 +266,13 @@ def recommend(
             "sectorsOfExpertise": m.get("sectorsOfExpertise"),
             "rolesOfExpertise": m.get("rolesOfExpertise"),
             "seniority": m.get("seniority"),
+            "city": m.get("city"),
             "aiProfile": m.get("aiProfile"),
             "toolExperience": m.get("toolExperience"),
             "mentorshipQuality": m.get("mentorshipQuality"),
             "dataQualityIssues": m.get("dataQualityIssues")
         }
-        for m in eligible_candidates
+        for m in top_candidates
     ]
 
     chain = RECOMMENDER_PROMPT | structured_llm
@@ -254,6 +281,7 @@ def recommend(
         "candidates_json": json.dumps(candidates_prompt_data, indent=2, ensure_ascii=False)
     })
 
+    # Step 5: Validate mentor IDs against retrieved results
     eligible_ids = set(candidates_by_id.keys())
     validated_recommendations = []
 
@@ -268,22 +296,25 @@ def recommend(
                 "matchReason": rec.matchReason,
                 "relevantExperience": rec.relevantExperience,
                 "limitations": rec.limitations,
-                "distance": actual_profile.get("_retrieval_distance")
+                "distance": actual_profile.get("_retrieval_distance"),
+                "rerankScore": actual_profile.get("_rerank_score")
             })
 
     has_matches = len(validated_recommendations) > 0 and llm_output.hasMatches
-
-    summary = llm_output.summary
-    if not has_matches and not summary:
-        summary = "No confirmed mentor matches found in the dataset for this inquiry."
+    summary = llm_output.summary or "No confirmed mentor matches found in the dataset for this inquiry."
 
     return {
         "question": question,
         "hasMatches": has_matches,
         "summary": summary,
         "recommendations": validated_recommendations,
-        "candidatesConsidered": len(eligible_candidates)
+        "candidatesConsidered": len(passages)
     }
+
+
+# ==============================================================================
+# Local CLI Test Runner
+# ==============================================================================
 
 if __name__ == "__main__":
     test_query = (
@@ -302,7 +333,7 @@ if __name__ == "__main__":
     print(f"Summary: {result['summary']}\n")
     print(f"Recommendations ({len(result['recommendations'])}):")
     for r in result["recommendations"]:
-        print(f"\n- [{r['mentorId']}] {r['name']} (Distance: {r['distance']})")
+        print(f"\n- [{r['mentorId']}] {r['name']} (Distance: {r['distance']}, Rerank: {r.get('rerankScore')})")
         print(f"  Reason: {r['matchReason']}")
         print(f"  Evidence: {r['relevantExperience']}")
         print(f"  Limitations: {r['limitations']}")

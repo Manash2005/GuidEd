@@ -6,8 +6,8 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 from dotenv import load_dotenv
-from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
+from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from flashrank import Ranker, RerankRequest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -17,12 +17,8 @@ README = ROOT / "readme.md"
 
 load_dotenv(ROOT / ".env")
 
-embeddings = OpenAIEmbeddings(
-    model="nvidia/nemotron-3-embed-1b:free",
-    base_url="https://openrouter.ai/api/v1",
-    api_key=os.environ["OPENROUTER_API_KEY"],
-    check_embedding_ctx_length=False
-)
+# Dense Semantic Embeddings: BAAI/bge-small-en-v1.5 (runs locally on CPU via ONNX)
+embeddings = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5")
 
 vector_store = Chroma(
     collection_name="mentors",
@@ -30,7 +26,7 @@ vector_store = Chroma(
     embedding_function=embeddings
 )
 
-# Initialize FlashRank local reranker model
+# Initialize FlashRank local cross-encoder reranker
 ranker = Ranker(model_name="ms-marco-TinyBERT-L-2-v2")
 
 
@@ -41,7 +37,6 @@ def log_to_readme(search_type: str, k: int, summary: dict):
     """
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    # Clean row-wise entry for this search type
     entry = (
         f"### 🔹 {search_type}\n"
         f"- **Hit Rate@{k}:** {summary['hit_rate']:.1%}\n"
@@ -68,7 +63,6 @@ def log_to_readme(search_type: str, k: int, summary: dict):
     else:
         target_header = f"### 🔹 {search_type}\n"
         if target_header in existing:
-            # Replace existing section for this search type
             sections = existing.split("### 🔹 ")
             new_sections = [sections[0]]
             for s in sections[1:]:
@@ -85,18 +79,17 @@ def log_to_readme(search_type: str, k: int, summary: dict):
     print(f"\n[INFO] Cleanly logged '{search_type}' metrics to {README}")
 
 
-def evaluate(use_reranker: bool = True, k: int = 5, fetch_k: int = 15, num_eval_questions: int = 10):
-    search_type = "With Reranker (ChromaDB + FlashRank)" if use_reranker else "Without Reranker (Baseline ChromaDB Vector Search)"
+def evaluate(use_reranker: bool = True, k: int = 5, fetch_k: int = 25, num_eval_questions: int = 10):
+    search_type = "Two-Stage Hybrid (Dense BGE + FlashRank Over-Fetch 25)" if use_reranker else "Dense BGE Vector Search (No Reranker)"
 
     with QUESTIONS.open(encoding="utf-8") as f:
         all_questions = json.load(f)
 
-    # 10 fixed questions with expected targets
     eval_questions = [q for q in all_questions if q.get("expectedMentorIds")][:num_eval_questions]
 
     print("=" * 65)
     print(f"EVALUATING: {search_type}")
-    print(f"Fixed queries: {len(eval_questions)} | Final K = {k}" + (f" | Initial Fetch K = {fetch_k}" if use_reranker else ""))
+    print(f"Fixed queries: {len(eval_questions)} | Final K = {k}" + (f" | Over-fetch Candidate Pool = {fetch_k}" if use_reranker else ""))
     print("=" * 65)
 
     total_recall = 0.0
@@ -112,26 +105,15 @@ def evaluate(use_reranker: bool = True, k: int = 5, fetch_k: int = 15, num_eval_
 
         print(f"[{i}/{len(eval_questions)}] {q_id}...", end=" ", flush=True)
 
-        # Stage 1: Vector retrieval
-        candidates = None
-        for attempt in range(4):
-            try:
-                retrieve_limit = fetch_k if use_reranker else k
-                candidates = vector_store.similarity_search(q_text, k=retrieve_limit)
-                break
-            except Exception as e:
-                if "429" in str(e) or "Rate limit" in str(e):
-                    wait_sec = 15 + attempt * 5
-                    print(f"\n  [Rate limit 429] Cooling down {wait_sec}s...", end=" ", flush=True)
-                    time.sleep(wait_sec)
-                else:
-                    raise e
+        # Stage 1: Dense Vector Retrieval (Over-fetching 25 candidates)
+        retrieve_limit = fetch_k if use_reranker else k
+        candidates = vector_store.similarity_search(q_text, k=retrieve_limit)
 
-        if candidates is None:
+        if not candidates:
             print("[FAILED]")
             continue
 
-        # Stage 2: Optional FlashRank reranking
+        # Stage 2: FlashRank Cross-Encoder Reranking
         if use_reranker:
             passages = [
                 {"id": doc.metadata["mentorId"], "text": doc.page_content}
@@ -163,9 +145,6 @@ def evaluate(use_reranker: bool = True, k: int = 5, fetch_k: int = 15, num_eval_
 
         print(f"Recall: {recall:.2f} | Hit: {hit} | RR: {rr:.2f}")
 
-        # Safe sleep between embedding API calls to respect 20 RPM limit
-        time.sleep(3.5)
-
     if evaluated_count == 0:
         print("[ERROR] No queries succeeded.")
         return
@@ -187,7 +166,6 @@ def evaluate(use_reranker: bool = True, k: int = 5, fetch_k: int = 15, num_eval_
     print(f"MRR@{k}:          {summary['mrr']:.3f}")
     print("=" * 65)
 
-    # Log row-wise metrics to readme.md
     log_to_readme(search_type, k, summary)
 
 
