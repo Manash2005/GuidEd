@@ -8,6 +8,7 @@ from routes.mentors_routes import router as mentors_router
 from routes.agent_routes import router as agent_router
 from routes.auth_routes import router as auth_router
 from routes.chat_routes import router as chat_router
+from routes.booking_routes import router as booking_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -38,6 +39,7 @@ app.include_router(auth_router, prefix="/api")
 app.include_router(mentors_router, prefix="/api")
 app.include_router(agent_router, prefix="/api")
 app.include_router(chat_router, prefix="/api")
+app.include_router(booking_router, prefix="/api")
 
 @app.get("/")
 async def root():
