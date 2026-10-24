@@ -11,7 +11,7 @@ from utils.auth import require_mentor
 router = APIRouter(prefix="/mentor", tags=["Mentor"])
 
 class MentorStatusUpdateRequest(BaseModel):
-    status: str = Field(..., description="New booking status ('confirmed' or 'completed')")
+    status: str = Field(..., description="New booking status ('confirmed', 'completed', or 'cancelled')")
 
 class MentorProfileUpdateRequest(BaseModel):
     email: Optional[str] = None
@@ -185,8 +185,8 @@ async def update_booking_status(
         raise HTTPException(status_code=403, detail="Access denied: booking belongs to another mentor")
 
     new_status = payload.status.strip().lower()
-    if new_status not in ("confirmed", "completed"):
-        raise HTTPException(status_code=400, detail="Mentors can only set status to 'confirmed' or 'completed'")
+    if new_status not in ("confirmed", "completed", "cancelled"):
+        raise HTTPException(status_code=400, detail="Mentors can only set status to 'confirmed', 'completed', or 'cancelled'")
 
     now = datetime.now(timezone.utc)
     await db["bookings"].update_one(

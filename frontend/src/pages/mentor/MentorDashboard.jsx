@@ -104,10 +104,13 @@ export default function MentorDashboard() {
     setStatusFeedback('');
     try {
       await mentorApi.updateStatus(bookingId, newStatus);
+      setBookings((prev) =>
+        prev.map((b) => (b.bookingId === bookingId ? { ...b, status: newStatus } : b))
+      );
       setStatusFeedback(`Status updated to ${newStatus}`);
       setTimeout(() => setStatusFeedback(''), 3000);
-      loadBookings();
-      loadDashboard();
+      await loadBookings();
+      await loadDashboard();
     } catch (err) {
       alert(err.message || 'Failed to update status');
     } finally {
@@ -271,26 +274,44 @@ export default function MentorDashboard() {
                       </div>
 
                       {/* Status Lifecycle Controls */}
-                      <div className="pt-2 flex items-center justify-between text-xs">
-                        <span className="text-[11px] text-[#98A2B3]">Update Stage:</span>
+                      <div className="pt-2 flex items-center justify-between text-xs border-t border-[#F2F4F7]">
+                        <span className="text-[11px] text-[#98A2B3]">Session Status:</span>
                         <div className="flex items-center gap-1.5">
-                          {isConfirmed && (
-                            <button
-                              onClick={() => handleUpdateStatus(booking.bookingId, 'completed')}
-                              disabled={updatingBookingId === booking.bookingId}
-                              className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-[#027A48] border border-emerald-200 rounded-md text-[11px] font-semibold transition cursor-pointer"
-                            >
-                              Mark Completed
-                            </button>
-                          )}
-                          {!isCancelled && (
-                            <button
-                              onClick={() => handleUpdateStatus(booking.bookingId, 'cancelled')}
-                              disabled={updatingBookingId === booking.bookingId}
-                              className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-[#D92D20] border border-rose-200 rounded-md text-[11px] font-semibold transition cursor-pointer"
-                            >
-                              Cancel Session
-                            </button>
+                          {isCompleted ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 text-[#344054] rounded-md text-[11px] font-semibold border border-[#D0D5DD]">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-[#12B76A]" />
+                              <span>Completed</span>
+                            </span>
+                          ) : isCancelled ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 text-[#D92D20] rounded-md text-[11px] font-semibold border border-rose-200">
+                              <X className="w-3.5 h-3.5" />
+                              <span>Cancelled</span>
+                            </span>
+                          ) : booking.status === 'pending' ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-[#B54708] rounded-md text-[11px] font-medium border border-amber-200">
+                              <span>Awaiting Admin Approval</span>
+                            </span>
+                          ) : (
+                            <>
+                              {isConfirmed && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateStatus(booking.bookingId, 'completed')}
+                                  disabled={updatingBookingId === booking.bookingId}
+                                  className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-[#027A48] border border-emerald-200 rounded-md text-[11px] font-semibold transition cursor-pointer disabled:opacity-50"
+                                >
+                                  {updatingBookingId === booking.bookingId ? 'Updating...' : 'Mark Completed'}
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateStatus(booking.bookingId, 'cancelled')}
+                                disabled={updatingBookingId === booking.bookingId}
+                                className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-[#D92D20] border border-rose-200 rounded-md text-[11px] font-semibold transition cursor-pointer disabled:opacity-50"
+                              >
+                                {updatingBookingId === booking.bookingId ? 'Updating...' : 'Cancel Session'}
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>

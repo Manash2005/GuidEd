@@ -157,10 +157,13 @@ export default function AdminDashboard() {
     setFeedbackMsg('');
     try {
       await adminApi.updateBookingStatus(bookingId, newStatus);
+      setBookingsList((prev) =>
+        prev.map((b) => (b.bookingId === bookingId ? { ...b, status: newStatus } : b))
+      );
       setFeedbackMsg(`Booking status updated to ${newStatus}`);
       setTimeout(() => setFeedbackMsg(''), 3000);
-      loadBookings();
-      loadAll();
+      await loadBookings();
+      await loadAll();
     } catch (err) {
       alert(err.message || 'Failed to update booking status');
     } finally {
@@ -173,10 +176,13 @@ export default function AdminDashboard() {
     setFeedbackMsg('');
     try {
       await adminApi.approveBooking(bookingId);
+      setBookingsList((prev) =>
+        prev.map((b) => (b.bookingId === bookingId ? { ...b, status: 'upcoming' } : b))
+      );
       setFeedbackMsg(`Booking ${bookingId} approved successfully! Confirmation email dispatched.`);
       setTimeout(() => setFeedbackMsg(''), 4000);
-      loadBookings();
-      loadAll();
+      await loadBookings();
+      await loadAll();
     } catch (err) {
       alert(err.message || 'Failed to approve booking');
     } finally {
@@ -190,10 +196,13 @@ export default function AdminDashboard() {
     setFeedbackMsg('');
     try {
       await adminApi.rejectBooking(bookingId);
+      setBookingsList((prev) =>
+        prev.map((b) => (b.bookingId === bookingId ? { ...b, status: 'cancelled' } : b))
+      );
       setFeedbackMsg(`Booking ${bookingId} has been rejected/cancelled.`);
       setTimeout(() => setFeedbackMsg(''), 4000);
-      loadBookings();
-      loadAll();
+      await loadBookings();
+      await loadAll();
     } catch (err) {
       alert(err.message || 'Failed to reject booking');
     } finally {

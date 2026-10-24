@@ -354,6 +354,9 @@ export default function StudentDashboard() {
     if (!window.confirm('Are you sure you want to cancel this mentorship session?')) return;
     try {
       await studentApi.cancelBooking(bookingId);
+      setBookings((prev) =>
+        prev.map((b) => (b.bookingId === bookingId ? { ...b, status: 'cancelled' } : b))
+      );
       await loadBookings();
       await loadDashboard();
     } catch (err) {
